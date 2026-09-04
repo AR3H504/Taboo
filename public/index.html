@@ -10,11 +10,21 @@
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="guesses.css">
 </head>
 <body>
   <div class="header">
     <h1><span class="full-title">Taboo by Arsh</span><span class="short-title">Taboo</span></h1>
+    <!-- Live scoreboard - always visible regardless of which screen is showing -->
+    <div class="scoreboard">
+      <div class="scoreboard-team red">
+        <span class="scoreboard-score" id="redTotalScore">0</span>
+        <span class="scoreboard-label">Red</span>
+      </div>
+      <div class="scoreboard-team blue">
+        <span class="scoreboard-score" id="blueTotalScore">0</span>
+        <span class="scoreboard-label">Blue</span>
+      </div>
+    </div>
     <div class="header-controls">
       <button type="button" id="settingsBtn" class="icon-btn">⚙️</button>
       <button type="button" id="themeToggle" class="icon-btn">🌙</button>
@@ -113,20 +123,8 @@
     </div>
 
     <div class="middle-column">
-      <!-- Teams Display (moved) -->
+      <!-- Teams Display -->
       <div class="teams-display">
-        <!-- Team Score Summary -->
-        <div class="team-scores-summary">
-          <div class="team-total red">
-            <div class="team-score" id="redTotalScore">0</div>
-            <div class="team-label">Red Team</div>
-          </div>
-          <div class="team-total blue">
-            <div class="team-score" id="blueTotalScore">0</div>
-            <div class="team-label">Blue Team</div>
-          </div>
-        </div>
-
         <!-- Team Lists (stacked vertically) -->
         <div class="team-list-column">
           <div class="team compact red">
@@ -1116,29 +1114,22 @@
       redTeam.forEach(player => {
         const li = document.createElement('li');
         const readyMark = player.ready ? ' ✅' : '';
-        const describerLabel = player.id === describers.red ? ' (Describer)' : '';
-        li.innerHTML = `${player.name}${describerLabel}${readyMark}${player.score ? `<div class="word-points">pts: ${player.score}</div>` : ''}`;
+        const describerLabel = player.id === describers.red ? ' <span class="describer-tag">Describer</span>' : '';
+        li.innerHTML = `<span class="player-name">${player.name}</span>${describerLabel}${readyMark}${player.score ? `<div class="word-points">pts: ${player.score}</div>` : ''}`;
         if (player.id === mySocketId) {
-          li.style.fontWeight = 'bold';
-        }
-        // Mark describer visually
-        if (player.id === describers.red) {
-          li.style.textDecoration = 'underline';
+          li.classList.add('is-me');
         }
         document.getElementById('redTeamList').appendChild(li);
       });
-      
+
       // Update blue team list
       blueTeam.forEach(player => {
         const li = document.createElement('li');
         const readyMark = player.ready ? ' ✅' : '';
-        const describerLabel = player.id === describers.blue ? ' (Describer)' : '';
-        li.innerHTML = `${player.name}${describerLabel}${readyMark}${player.score ? `<div class="word-points">pts: ${player.score}</div>` : ''}`;
+        const describerLabel = player.id === describers.blue ? ' <span class="describer-tag">Describer</span>' : '';
+        li.innerHTML = `<span class="player-name">${player.name}</span>${describerLabel}${readyMark}${player.score ? `<div class="word-points">pts: ${player.score}</div>` : ''}`;
         if (player.id === mySocketId) {
-          li.style.fontWeight = 'bold';
-        }
-        if (player.id === describers.blue) {
-          li.style.textDecoration = 'underline';
+          li.classList.add('is-me');
         }
         document.getElementById('blueTeamList').appendChild(li);
       });
@@ -1201,13 +1192,11 @@
         }
         
         // Set CSS variable for team-specific shadow color
-        turnDisplay.style.setProperty('--team-shadow', 
+        turnDisplay.style.setProperty('--team-shadow',
           gameState.currentTurn === 'red' ? '255, 68, 68' : '68, 68, 255'
         );
-        turnDisplay.style.animation = 'pulse 2s infinite';
       } else {
         turnDisplay.className = 'turn-display';
-        turnDisplay.style.animation = 'none';
       }
     });
 
@@ -1217,7 +1206,9 @@
       window.inReview = false;
       const reviewModal = document.getElementById('reviewModal');
       if (reviewModal) reviewModal.style.display = 'none';
-      document.getElementById('timeLeft').textContent = formatTime(duration);
+      const timeLeftEl = document.getElementById('timeLeft');
+      timeLeftEl.textContent = formatTime(duration);
+      timeLeftEl.classList.remove('warning', 'tick', 'times-up');
       document.getElementById('roundTimer').style.display = 'block';
       // Clear team guesses for new round
       document.getElementById('teamGuesses').innerHTML = '';
@@ -1227,14 +1218,24 @@
     });
 
     socket.on('roundTimeUpdate', (timeLeft) => {
-      document.getElementById('timeLeft').textContent = formatTime(timeLeft);
-      if (timeLeft <= 10) {
-        document.getElementById('timeLeft').classList.add('warning');
+      const timeLeftEl = document.getElementById('timeLeft');
+      timeLeftEl.textContent = formatTime(timeLeft);
+      if (timeLeft <= 10 && timeLeft > 0) {
+        timeLeftEl.classList.add('warning');
+        // Retrigger the tick animation every single second so it's genuinely
+        // in sync with the number changing, instead of running on its own
+        // free-running loop that drifts out of phase with the real countdown.
+        timeLeftEl.classList.remove('tick');
+        void timeLeftEl.offsetWidth; // force reflow so the class re-add restarts the animation
+        timeLeftEl.classList.add('tick');
       }
     });
 
     socket.on('roundEnded', () => {
-      document.getElementById('timeLeft').textContent = 'Time\'s up!';
+      const timeLeftEl = document.getElementById('timeLeft');
+      timeLeftEl.textContent = 'Time\'s up!';
+      timeLeftEl.classList.remove('warning', 'tick');
+      timeLeftEl.classList.add('times-up');
       document.getElementById('guessingControls').style.display = 'none';
       wordsList.innerHTML = '';
       // Restore timer controls after round ends
@@ -1409,7 +1410,9 @@
         const li = document.createElement("li");
         const text = (typeof word === 'string') ? word : (word && word.word) ? word.word : String(word);
         const pts = (word && typeof word === 'object' && word.points) ? word.points : null;
-  li.innerHTML = `${text}${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+        li.dataset.word = String(text).toLowerCase();
+        li.className = 'word-item';
+        li.innerHTML = `<div class="word-text">${text}</div>${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
         wordsList.appendChild(li);
       }
     });
