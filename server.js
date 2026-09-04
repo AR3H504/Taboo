@@ -865,6 +865,42 @@ io.on('connection', (socket) => {
         });
     });
 
+    // Silent spectator: joins the room's socket.io channel (so it gets every
+    // broadcast a real player would - observerWordsRoom, roundReview,
+    // updateGameState, guesses, timer ticks, gameOver) without ever being
+    // added to rooms[roomCode].players, so nothing about a spectator is ever
+    // visible to the actual players (no roster entry, no join notification).
+    // Entirely separate code path from joinRoom - doesn't touch it.
+    socket.on('spectateRoom', (roomCode) => {
+        const room = rooms[roomCode];
+        if (!room) {
+            socket.emit('spectateFailed', 'Room does not exist');
+            return;
+        }
+        socket.join(roomCode);
+        // New joiners only get broadcasts from this point forward, so send
+        // a full snapshot of where things stand right now too - including a
+        // computed time-remaining, since roundTimeUpdate ticks were already
+        // missed if a round is already in progress.
+        const timeLeft = room.roundActive && room.roundEndTime
+            ? Math.max(0, Math.ceil((room.roundEndTime - Date.now()) / 1000))
+            : null;
+        socket.emit('spectateJoined', {
+            roomCode,
+            currentTurn: room.currentTurn,
+            currentRound: room.currentRound,
+            roundActive: !!room.roundActive,
+            timeLeft,
+            settings: room.settings,
+            teams: {
+                red: { score: room.teams.red.score },
+                blue: { score: room.teams.blue.score }
+            },
+            words: room.words || [],
+            players: room.players.map(p => ({ name: p.name, team: p.team, role: p.role, score: p.score }))
+        });
+    });
+
     socket.on('disconnect', () => {
         console.log('user disconnected:', socket.id);
         for (const roomCode in rooms) {

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectate</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1e222b;
+    --border: #2a2f3a;
+    --text: #e6e8ee;
+    --muted: #8991a3;
+    --red: #ef4444;
+    --red-soft: rgba(239,68,68,0.15);
+    --blue: #3b82f6;
+    --blue-soft: rgba(59,130,246,0.15);
+    --green: #2ecc71;
+    --yellow: #f39c12;
+    --accent: #8b5cf6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Entry screen */
+  #entryScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  #entryScreen .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  #entryScreen h1 { font-size: 1.1rem; color: var(--muted); font-weight: 600; margin: 0 0 1.25rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  #entryScreen input {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    text-align: center;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    margin-bottom: 0.75rem;
+  }
+  #entryScreen button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+  }
+  #entryError { color: var(--red); font-size: 0.85rem; margin-top: 0.75rem; min-height: 1.2em; }
+
+  /* Dashboard */
+  #dashboard { display: none; max-width: 1000px; margin: 0 auto; padding: 1rem; }
+
+  .topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.1rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+  }
+  .topbar .room-code { font-weight: 700; letter-spacing: 0.08em; color: var(--muted); font-size: 0.85rem; }
+  .scores { display: flex; gap: 0.5rem; margin-left: auto; }
+  .score-chip { padding: 0.35rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.95rem; }
+  .score-chip.red { background: var(--red-soft); color: var(--red); }
+  .score-chip.blue { background: var(--blue-soft); color: var(--blue); }
+  .turn-info { font-size: 0.85rem; color: var(--muted); }
+  .turn-info b { color: var(--text); }
+  #timer { font-weight: 700; font-size: 1.1rem; min-width: 3.5rem; text-align: center; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .panel h2 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin: 0 0 0.75rem;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .chip.partial { border-color: var(--yellow); background: rgba(243,156,18,0.12); }
+  .chip.done { border-color: var(--green); background: rgba(46,204,113,0.12); }
+  .chip .pts { font-size: 0.75rem; padding: 1px 6px; border-radius: 999px; background: var(--panel); color: var(--muted); }
+
+  #liveFeed { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column-reverse; gap: 0.35rem; }
+  .feed-item { font-size: 0.85rem; padding: 0.35rem 0.6rem; border-radius: 6px; background: var(--panel-2); }
+  .feed-item.correct { color: var(--green); }
+  .feed-item.partial { color: var(--yellow); }
+  .feed-item.wrong { color: var(--muted); }
+
+  .round-entry { border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem; margin-bottom: 0.75rem; background: var(--panel-2); }
+  .round-entry .round-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.6rem; }
+  .round-entry .round-header .title { font-weight: 700; }
+  .round-entry .round-header .title .team-red { color: var(--red); }
+  .round-entry .round-header .title .team-blue { color: var(--blue); }
+  .guessers-line { margin-top: 0.6rem; font-size: 0.85rem; color: var(--muted); }
+  .guessers-line b { color: var(--text); }
+
+  #gameOverBanner {
+    display: none;
+    background: linear-gradient(135deg, var(--accent), #6d28d9);
+    color: white;
+    padding: 1rem 1.2rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .empty-hint { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+</style>
+</head>
+<body>
+
+  <div id="entryScreen">
+    <div class="card">
+      <h1>Spectate a room</h1>
+      <input id="codeInput" placeholder="Room code" maxlength="10" autocomplete="off" autocapitalize="characters">
+      <button id="watchBtn">Watch</button>
+      <div id="entryError"></div>
+    </div>
+  </div>
+
+  <div id="dashboard">
+    <div id="gameOverBanner"></div>
+
+    <div class="topbar">
+      <div class="room-code">ROOM <span id="roomCodeLabel"></span></div>
+      <div class="turn-info"><b id="turnLabel">-</b> · Round <span id="roundLabel">-</span></div>
+      <div id="timer">-</div>
+      <div class="scores">
+        <div class="score-chip red"><span id="redScore">0</span> RED</div>
+        <div class="score-chip blue"><span id="blueScore">0</span> BLUE</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Words currently in play</h2>
+      <div id="liveWords" class="chips"><div class="empty-hint">No round in progress.</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>Live guess feed</h2>
+      <div id="liveFeed"><div class="empty-hint">Nothing yet.</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>Round-by-round history</h2>
+      <div id="roundHistory"><div class="empty-hint">No rounds completed yet.</div></div>
+    </div>
+  </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const entryScreen = document.getElementById('entryScreen');
+  const dashboard = document.getElementById('dashboard');
+  const entryError = document.getElementById('entryError');
+  let roomCode = null;
+
+  function watch() {
+    const code = document.getElementById('codeInput').value.trim().toUpperCase();
+    if (!code) return;
+    entryError.textContent = '';
+    socket.emit('spectateRoom', code);
+  }
+  document.getElementById('watchBtn').onclick = watch;
+  document.getElementById('codeInput').addEventListener('keydown', e => { if (e.key === 'Enter') watch(); });
+
+  socket.on('spectateFailed', msg => { entryError.textContent = msg || 'Could not join that room.'; });
+
+  function fmtTime(s) {
+    if (s == null) return '-';
+    const m = Math.floor(s / 60), sec = s % 60;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  }
+
+  function renderLiveWords(words) {
+    const el = document.getElementById('liveWords');
+    if (!words || words.length === 0) { el.innerHTML = '<div class="empty-hint">No round in progress.</div>'; return; }
+    el.innerHTML = words.map(w => {
+      const cls = w.status === 'partial' ? 'chip partial' : w.status === 'done' ? 'chip done' : 'chip';
+      const pts = w.status === 'partial' ? w.partialPoints : (w.points || w.originalPoints);
+      return `<div class="${cls}">${w.word}${pts ? `<span class="pts">+${pts}</span>` : ''}${w.guessedBy ? `<span class="pts">${w.guessedBy}</span>` : ''}</div>`;
+    }).join('');
+  }
+
+  function addFeedItem(text, cls) {
+    const el = document.getElementById('liveFeed');
+    if (el.querySelector('.empty-hint')) el.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'feed-item' + (cls ? ' ' + cls : '');
+    div.textContent = text;
+    el.prepend(div);
+    while (el.children.length > 40) el.removeChild(el.lastChild);
+  }
+
+  function addRoundToHistory(payload) {
+    const el = document.getElementById('roundHistory');
+    if (el.querySelector('.empty-hint')) el.innerHTML = '';
+
+    const words = payload.words || [];
+    const totals = new Map();
+    words.forEach(w => {
+      if (!w || !w.guessedBy) return;
+      const earned = w.status === 'done' ? (w.points || w.originalPoints || 0)
+        : w.status === 'partial' ? (w.partialPoints || 0) : 0;
+      totals.set(w.guessedBy, (totals.get(w.guessedBy) || 0) + earned);
+    });
+    const guesserLine = [...totals.entries()].sort((a, b) => b[1] - a[1])
+      .map(([name, pts]) => `${name}: ${pts}pt${pts === 1 ? '' : 's'}`).join(', ') || 'nobody guessed anything';
+
+    const wordChips = words.map(w => {
+      const cls = w.status === 'partial' ? 'chip partial' : w.status === 'done' ? 'chip done' : 'chip';
+      const pts = w.status === 'partial' ? w.partialPoints : (w.points || w.originalPoints);
+      return `<div class="${cls}">${w.word}${pts ? `<span class="pts">+${pts}</span>` : ''}</div>`;
+    }).join('');
+
+    const entry = document.createElement('div');
+    entry.className = 'round-entry';
+    const teamClass = payload.team === 'blue' ? 'team-blue' : 'team-red';
+    entry.innerHTML = `
+      <div class="round-header">
+        <span class="title">Round ${payload.roundNumber} — <span class="${teamClass}">${(payload.team || '').toUpperCase()}</span></span>
+      </div>
+      <div class="chips">${wordChips}</div>
+      <div class="guessers-line"><b>Guessers:</b> ${guesserLine}</div>
+    `;
+    el.prepend(entry); // newest round on top
+  }
+
+  socket.on('spectateJoined', state => {
+    roomCode = state.roomCode;
+    entryScreen.style.display = 'none';
+    dashboard.style.display = 'block';
+    document.getElementById('roomCodeLabel').textContent = roomCode;
+    document.getElementById('redScore').textContent = state.teams.red.score;
+    document.getElementById('blueScore').textContent = state.teams.blue.score;
+    document.getElementById('turnLabel').textContent = (state.currentTurn || '-').toUpperCase() + "'S TURN";
+    const totalRounds = (state.settings && state.settings.roundsPerTeam || 1) * 2;
+    document.getElementById('roundLabel').textContent = `${state.currentRound || 0} / ${totalRounds}`;
+    document.getElementById('timer').textContent = state.timeLeft != null ? fmtTime(state.timeLeft) : '-';
+    renderLiveWords(state.words);
+  });
+
+  socket.on('updateGameState', gs => {
+    if (!roomCode) return;
+    document.getElementById('redScore').textContent = gs.teams.red.score;
+    document.getElementById('blueScore').textContent = gs.teams.blue.score;
+    document.getElementById('turnLabel').textContent = (gs.currentTurn || '-').toUpperCase() + "'S TURN";
+    const totalRounds = (gs.settings && gs.settings.roundsPerTeam || 1) * 2;
+    document.getElementById('roundLabel').textContent = `${gs.currentRound || 0} / ${totalRounds}`;
+  });
+
+  socket.on('observerWordsRoom', payload => {
+    if (!roomCode) return;
+    renderLiveWords(payload.words);
+  });
+
+  socket.on('roundStarted', duration => {
+    if (!roomCode) return;
+    document.getElementById('timer').textContent = fmtTime(duration);
+  });
+  socket.on('roundTimeUpdate', t => {
+    if (!roomCode) return;
+    document.getElementById('timer').textContent = fmtTime(t);
+  });
+  socket.on('roundEnded', () => {
+    if (!roomCode) return;
+    document.getElementById('timer').textContent = "Time's up";
+    renderLiveWords([]);
+  });
+
+  socket.on('announceGuess', (guess, player) => {
+    if (!roomCode) return;
+    const text = typeof guess === 'string' ? guess : (guess && guess.word) || String(guess);
+    addFeedItem(`${player.name} is trying "${text}"...`);
+  });
+  socket.on('correctGuess', (data, player) => {
+    if (!roomCode) return;
+    if (data.isPartialMatch) addFeedItem(`${player.name} partially got "${data.word}" (+${data.points})`, 'partial');
+    else if (data.isCompletingPartial) addFeedItem(`${player.name} completed "${data.word}" (+${data.points})`, 'correct');
+    else addFeedItem(`${player.name} guessed "${data.word}" (+${data.points})`, 'correct');
+  });
+  socket.on('wrongGuess', (guess, player) => {
+    if (!roomCode) return;
+    const text = typeof guess === 'string' ? guess : (guess && guess.word) || String(guess);
+    addFeedItem(`${player.name}: "${text}" - no match`, 'wrong');
+  });
+
+  socket.on('roundReview', payload => {
+    if (!roomCode) return;
+    addRoundToHistory(payload);
+  });
+
+  socket.on('gameOver', ({ winner, redTeam, blueTeam }) => {
+    if (!roomCode) return;
+    const banner = document.getElementById('gameOverBanner');
+    banner.style.display = 'block';
+    if (winner === 'tie') {
+      banner.textContent = `GAME OVER — Tie, ${redTeam.score}-${blueTeam.score}`;
+    } else {
+      const winScore = winner === 'red' ? redTeam.score : blueTeam.score;
+      const loseScore = winner === 'red' ? blueTeam.score : redTeam.score;
+      banner.textContent = `GAME OVER — ${winner.toUpperCase()} wins, ${winScore}-${loseScore}`;
+    }
+  });
+</script>
+</body>
+</html>
