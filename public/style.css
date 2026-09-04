@@ -488,6 +488,16 @@ input:focus {
 .team-selection { margin: 0.5rem 0; }
 .team-selection > label { font-weight: 600; font-size: 0.9rem; }
 
+/* Once you're actually in a room, the create/join/team-pick controls are
+   done being useful - collapse them so they stop taking up space above the
+   things that matter mid-game (word list, guesses, ready/switch-role). */
+.room-controls.joined #createRoomBtn,
+.room-controls.joined #roomCodeInput,
+.room-controls.joined #nameInput,
+.room-controls.joined .team-selection {
+    display: none;
+}
+
 .join-options { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin: 0.75rem 0; }
 
 .team-option {
@@ -560,7 +570,7 @@ input:focus {
         flex-direction: column;
         max-width: 640px;
         margin: 0 auto;
-        padding: 0.75rem 0.75rem 6.5rem; /* room for the fixed guess bar */
+        padding: 0.75rem 0.75rem 15rem; /* room for the fixed guesses+input bar */
         gap: 0.9rem;
     }
 
@@ -583,26 +593,50 @@ input:focus {
     .team-option { width: 100%; max-width: 320px; margin: 0 auto; }
 
     .game-area { flex-direction: column; padding: 0.75rem; }
-    .describer-area, .guessing-area { flex-basis: auto; }
+    .describer-area { flex-basis: auto; }
 
-    #wordsList, #teamGuesses, #observerWords .word-container { max-height: none; }
+    #wordsList, #observerWords .word-container { max-height: none; }
 
     .word-item, .team-guess {
         font-size: 1rem;
         padding: 0.65rem 0.85rem;
     }
 
-    /* Guess input pinned to the bottom of the viewport so it's always in
-       thumb's reach, same treatment desktop doesn't need. */
-    .guessing-area #guessingControls {
+    /* The guesses feed and the guess input move together as one fixed unit
+       pinned to the bottom of the viewport, so whatever you just guessed is
+       always right there above the keyboard - not scrolled away somewhere
+       else on the page. */
+    .guessing-area {
         position: fixed;
         left: 0; right: 0; bottom: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-color);
+        box-shadow: 0 -2px 12px var(--shadow-color);
+        z-index: 90;
+        max-height: 60vh;
+        padding: 0;
+    }
+
+    .guessing-area .guesses-section {
+        order: 1;
+        overflow-y: auto;
+        padding: 0.6rem 0.75rem 0;
+    }
+
+    .guessing-area .guesses-section h4 { margin: 0 0 0.4rem; }
+
+    #teamGuesses { max-height: 26vh; }
+
+    .guessing-area #guessingControls {
+        order: 2;
+        position: static;
         background: var(--bg-color);
         padding: 0.65rem 0.75rem;
         padding-bottom: max(0.65rem, env(safe-area-inset-bottom));
-        box-shadow: 0 -2px 12px var(--shadow-color);
-        z-index: 90;
+        box-shadow: none;
         margin: 0;
+        flex-shrink: 0;
     }
 
     #guessInput, #guessBtn { font-size: 16px; padding: 0.75rem; } /* 16px avoids iOS auto-zoom */

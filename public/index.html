@@ -1151,6 +1151,13 @@
 
       socket.on('joinSuccess', () => {
         console.log('Join successful');
+        // Once actually in a room, the create/join controls are no longer
+        // relevant - hide them so they stop pushing the live game content
+        // (word list, guesses, ready/switch-role) down the page. This
+        // matters most on mobile, where every extra scroll before you can
+        // see your latest guess while the keyboard is open really hurts.
+        const roomControls = document.querySelector('.room-controls');
+        if (roomControls) roomControls.classList.add('joined');
       });
 
       // Join failure with structured payload
