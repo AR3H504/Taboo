@@ -557,6 +557,35 @@
       // This handler is only invoked for real describers; observers receive 'observerWords'
     });
 
+    // Shared renderer for the "Words (observing)" panel - used by both
+    // observerWords and observerWordsRoom below so they can't drift apart
+    // again. Server only ever sends the currently in-play list (same as the
+    // describer sees), so a word disappears here the moment it's finished -
+    // there's no "done" case to render, but it's handled defensively anyway.
+    function renderObserverWordList(words) {
+      return '<h4>Words (observing)</h4><div class="word-container">' + (words || []).map(w => {
+        const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
+        const status = (w && typeof w === 'object') ? w.status : null;
+        const classes = ['team-guess'];
+        let pointsText = '';
+
+        if (status === 'done') {
+          classes.push('correct');
+          const pts = w.points || w.originalPoints;
+          if (pts) pointsText = `<span class="word-points">(+${pts})</span>`;
+        } else if (status === 'partial') {
+          classes.push('partial');
+          if (w.partialPoints) pointsText = `<span class="word-points">(+${w.partialPoints} of ${w.originalPoints || w.partialPoints * 2})</span>`;
+        } else {
+          // Not yet guessed - still show its value, same as the describer sees
+          const pts = (w && typeof w === 'object') ? (w.points || w.originalPoints) : null;
+          if (pts) pointsText = `<span class="word-points">(+${pts})</span>`;
+        }
+
+        return `<div class="${classes.join(' ')}">${text}${pointsText}</div>`;
+      }).join('') + '</div>';
+    }
+
     // Observer-only: receive words (so observers can view words without the client
     // switching to describer UI or clearing team guesses)
     socket.on('observerWords', words => {
@@ -564,13 +593,8 @@
         const observerEl = document.getElementById('observerWords');
         if (!observerEl) return;
 
-        // Pre-prepare the new content before updating DOM
-        const newContent = '<h4>Words (observing)</h4><div class="word-container">' + words.map(w => {
-          const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
-          const pts = (w && typeof w === 'object' && w.points) ? w.points : null;
-          return `<div class="word-item">${text}${pts ? `<div class="word-points">(+${pts})</div>` : ''}</div>`;
-        }).join('') + '</div>';
-        
+        const newContent = renderObserverWordList(words);
+
         // After preparing new content, ensure layout elements are correctly configured first
         const guessingArea = document.querySelector('.guessing-area');
         const guessingControls = document.getElementById('guessingControls');
@@ -603,26 +627,7 @@
           return;
         }
 
-        // Pre-prepare the new content matching team guesses style
-        const newContent = '<h4>Words (observing)</h4><div class="word-container">' + payload.words.map(w => {
-          const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
-          const classes = ['team-guess'];
-          let pointsText = '';
-
-          if (w.completed || w.isCorrect) {
-            classes.push('correct');
-            if (w.points) {
-              pointsText = `<span class="word-points">(+${w.points})</span>`;
-            }
-          } else if (w.isPartialMatch) {
-            classes.push('partial');
-            if (w.partialPoints) {
-              pointsText = `<span class="word-points">(+${w.partialPoints} of ${w.originalPoints || w.basePoints || w.partialPoints*2} (partial))</span>`;
-            }
-          }
-
-          return `<div class="${classes.join(' ')}">${text}${pointsText}${w.guessedBy ? ` by ${w.guessedBy}` : ''}</div>`;
-        }).join('') + '</div>';
+        const newContent = renderObserverWordList(payload.words);
 
         // Use requestAnimationFrame to ensure smooth update
         requestAnimationFrame(() => {
@@ -630,98 +635,6 @@
         });
       } catch (err) {
         console.error('Error handling observerWordsRoom:', err);
-      }
-    });
-
-        // Describer-targeted observer-style update: same visual as team guesses
-    socket.on('describerObserverWords', payload => {
-      try {
-        if (!payload || !payload.words) return;
-        const observerEl = document.getElementById('observerWords');
-        if (!observerEl) return;
-
-        const newContent = '<h4>Words (observing)</h4><div class="word-container">' + payload.words.map(w => {
-          const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
-          const classes = ['team-guess'];
-          let pointsText = '';
-
-          if (w.completed || w.isCorrect) {
-            classes.push('correct');
-            if (w.points) {
-              pointsText = `<span class="word-points">(+${w.points})</span>`;
-            }
-          } else if (w.isPartialMatch) {
-            classes.push('partial');
-            if (w.partialPoints) {
-              pointsText = `<span class="word-points">(+${w.partialPoints} of ${w.originalPoints || w.basePoints || w.partialPoints*2} (partial))</span>`;
-            }
-          }
-
-          return `<div class="${classes.join(' ')}">${text}${pointsText}${w.guessedBy ? ` by ${w.guessedBy}` : ''}</div>`;
-        }).join('') + '</div>';        // Update DOM smoothly
-        requestAnimationFrame(() => {
-          observerEl.innerHTML = newContent;
-        });
-
-        // Also update the describer's own words list to show green/partial styling inline
-        try {
-          if (wordsList) {
-            payload.words.forEach(w => {
-              const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
-              const lower = String(text).toLowerCase();
-              // find matching li in wordsList by data-word
-              const li = Array.from(wordsList.children).find(el => el.dataset && el.dataset.word === lower);
-              if (li) {
-                // Handle word state updates
-                const isComplete = w && typeof w === 'object' && (w.completed || w.isCorrect);
-                const isPartial = w && typeof w === 'object' && (w.isPartialMatch || w.partialPoints) && !isComplete;
-                
-                // Clear previous state
-                li.classList.remove('correct-word', 'partial-word');
-                
-                // Set new state
-                if (isComplete) {
-                  li.classList.add('correct-word');
-                  let info = '';
-                  if (w.guessedBy) info += `<div class="guessed-by">${w.guessedBy}</div>`;
-                  if (w.points) info += `<div class="word-points">(+${w.points})</div>`;
-                  if (info) {
-                    const existing = li.querySelector('.describer-extra');
-                    if (existing) existing.innerHTML = info;
-                    else {
-                      const div = document.createElement('div');
-                      div.className = 'describer-extra';
-                      div.innerHTML = info;
-                      li.appendChild(div);
-                    }
-                  }
-                } else if (isPartial) {
-                  li.classList.add('partial-word');
-                  let info = '';
-                  if (w.partialPoints) info += `<div class="word-points">(+${w.partialPoints})</div>`;
-                  if (info) {
-                    const existing = li.querySelector('.describer-extra');
-                    if (existing) existing.innerHTML = info;
-                    else {
-                      const div = document.createElement('div');
-                      div.className = 'describer-extra';
-                      div.innerHTML = info;
-                      li.appendChild(div);
-                    }
-                  }
-                } else {
-                  // Remove any extra info if returning to normal state
-                  const existing = li.querySelector('.describer-extra');
-                  if (existing) existing.remove();
-                }
-              }
-            });
-          }
-        } catch (updateErr) {
-          console.error('Failed to update describer word list from describerObserverWords:', updateErr);
-        }
-      } catch (err) {
-        console.error('Error handling describerObserverWords:', err);
       }
     });
 
@@ -1049,24 +962,6 @@
       // Re-apply describer availability (don't enable describer join if it's already taken)
       try { updateDescriberButtons(describers); } catch (e) { }
 
-      // If this client switched mid-round, prevent switching back to the previous team
-      try {
-        if (me && me.switchedFrom && roundActive) {
-          const forbid = me.switchedFrom;
-          if (forbid === 'red') {
-            const el1 = document.getElementById('redDescriber');
-            const el2 = document.getElementById('redGuesser');
-            if (el1) el1.disabled = true;
-            if (el2) el2.disabled = true;
-          } else if (forbid === 'blue') {
-            const el1 = document.getElementById('blueDescriber');
-            const el2 = document.getElementById('blueGuesser');
-            if (el1) el1.disabled = true;
-            if (el2) el2.disabled = true;
-          }
-        }
-      } catch (e) { }
-
       // Ensure the client's view (describer / guesser / observer) matches the authoritative server state
       try {
         const describerArea = document.querySelector('.describer-area');
@@ -1094,9 +989,16 @@
         }
       } catch (e) { console.error('Failed to apply client view sync:', e); }
 
-      // Enable start button only for the current team's describer. If we're in review,
-      // allow the describer to start regardless of ready state.
+      // Start Round is only ever usable by a describer (and only actually
+      // enabled when it's their team's turn) - a guesser can never start a
+      // round, so there's no reason to show it to them at all. Likewise
+      // Ready only matters for guessers; the describer never readies up.
+      // Re-derived from `me.role` every time game state updates (not just on
+      // join), so this stays correct across role rotation/switching in later
+      // rounds too, not just the first one.
+      const iAmDescriber = !!(me && me.role === 'describer');
       if (startBtn) {
+        startBtn.style.display = iAmDescriber ? '' : 'none';
         let canStart = false;
         if (mySocketId && describers[currentTurn] && mySocketId === describers[currentTurn]) {
           if (window.inReview) canStart = true;
@@ -1104,6 +1006,8 @@
         }
         startBtn.disabled = !canStart;
       }
+      if (readyBtnRole) readyBtnRole.style.display = iAmDescriber ? 'none' : '';
+      if (readyBtn) readyBtn.style.display = iAmDescriber ? 'none' : '';
 
       // Update describer button states based on current game state
       updateDescriberButtons(describers);
@@ -1146,9 +1050,16 @@
       document.getElementById('blueTotalScore').textContent = blueScore;
     }
 
-    socket.on("playerList", gameState => {
-      console.log('Received playerList event:', gameState);
-      updateTeamsDisplay(gameState);
+    socket.on("playerList", players => {
+      console.log('Received playerList event:', players);
+      // The server sends a bare players array here, not a full game-state
+      // object - updateTeamsDisplay also reads describers/currentTurn/
+      // roundActive/settings, which would otherwise silently reset to
+      // defaults every single time this fires (i.e. on every join), clobbering
+      // whatever the last real updateGameState had correctly computed. Merge
+      // onto the last known full state so only the roster actually refreshes.
+      const merged = Object.assign({}, window.lastGameState || {}, { players });
+      updateTeamsDisplay(merged);
     });
 
       socket.on('joinSuccess', () => {

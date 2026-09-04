@@ -521,7 +521,7 @@ io.on('connection', (socket) => {
 
         // Also emit a room-level observerWordsRoom event so clients can update reliably
         try {
-            io.to(roomCode).emit('observerWordsRoom', { team, words: rooms[roomCode].observerWords });
+            io.to(roomCode).emit('observerWordsRoom', { team, words: rooms[roomCode].words });
         } catch (err) {
             console.error('Failed to emit observerWordsRoom:', err);
         }
@@ -553,15 +553,15 @@ io.on('connection', (socket) => {
                             io.to(player.id).emit('newWord', newWord);
                         }
                         else if (player.team === otherTeam) {
-                            // Other team players get the updated list of all words as observerWords
+                            // Other team players get the current in-play word list, same as the describer sees
                             console.log('Sending observer word list to other team player:', player.name);
-                            io.to(player.id).emit('observerWords', rooms[roomCode].observerWords);
+                            io.to(player.id).emit('observerWords', rooms[roomCode].words);
                         }
                     });
 
                     // Also send a room-level update for observers
                     try {
-                        io.to(roomCode).emit('observerWordsRoom', { team, words: rooms[roomCode].observerWords });
+                        io.to(roomCode).emit('observerWordsRoom', { team, words: rooms[roomCode].words });
                     } catch (err) {
                         console.error('Failed to emit observerWordsRoom (timer):', err);
                     }
@@ -745,7 +745,10 @@ io.on('connection', (socket) => {
             if (currentDescriberId) {
                 io.to(currentDescriberId).emit('describerWords', room.words);
             }
-            io.to(roomCode).emit('observerWordsRoom', { team: room.currentTurn, words: room.observerWords });
+            // Observers see the same live in-play list the describer does
+            // (not the full round history) - a word disappears from their
+            // view the moment it's actually finished, same as the describer's.
+            io.to(roomCode).emit('observerWordsRoom', { team: room.currentTurn, words: room.words });
             io.to(roomCode).emit('updateGameState', {
                 describers: { ...room.describers },
                 currentTurn: room.currentTurn,
