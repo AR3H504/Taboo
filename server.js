@@ -118,8 +118,32 @@ function getRandomWords(n, difficulty = 'mixed', options = {}) {
     return shuffled.slice(0, n).map(instantiateWord);
 }
 
-// Pull up to `count` words off the room's reveal queue.
+// Top up the room's reveal queue so it never just runs dry mid-round. A
+// round's total word count can't be predicted up front - a slow team might
+// only get through a handful, a fast one (especially with the burst-refill
+// below) can blow through dozens - so words are drawn lazily instead of
+// pre-allocating one fixed batch at round start.
+function ensureWordSupply(room, minCount) {
+    if (!room.remainingWords) room.remainingWords = [];
+    if (room.remainingWords.length >= minCount) return;
+
+    const shownTexts = new Set((room.shownWords || []).map(w => w.word.toLowerCase()));
+    const need = Math.max(minCount - room.remainingWords.length, 20); // draw generously so this isn't hit every guess
+    const difficulty = (room.settings && room.settings.difficulty) || 'mixed';
+
+    let fresh = getRandomWords(need * 3, difficulty, { enforceRatio: true, easyRatio: 0.6 })
+        .filter(w => !shownTexts.has(w.word.toLowerCase()));
+    if (fresh.length === 0) {
+        // The whole pack has already been shown this round - allow repeats
+        // rather than letting the round stall out with no words left at all.
+        fresh = getRandomWords(need, difficulty, { enforceRatio: true, easyRatio: 0.6 });
+    }
+    room.remainingWords.push(...fresh.slice(0, need));
+}
+
+// Pull up to `count` words off the room's reveal queue, topping it up first.
 function pullWords(room, count) {
+    ensureWordSupply(room, count);
     if (!room.remainingWords || room.remainingWords.length === 0) return [];
     return room.remainingWords.splice(0, count);
 }
@@ -462,16 +486,19 @@ io.on('connection', (socket) => {
         const settings = rooms[roomCode].settings;
         console.log(`Starting round in room ${roomCode} with ${settings.roundDuration} second duration`);
 
-    // Start the round with initial words
-    const allWords = getRandomWords(settings.startingWords + 5, settings.difficulty, { enforceRatio: true, easyRatio: 0.6 }); // Get more words than we initially show with 60/40 easy/medium for starting pool
-    const initialWords = allWords.slice(0, settings.startingWords);
+    // Start the round with initial words. The reveal queue (remainingWords)
+    // starts empty on purpose - it's topped up lazily by ensureWordSupply()
+    // as words are actually needed (both the timer below and the burst-refill
+    // in the guess handler pull through it), so a round never runs dry no
+    // matter how many words end up getting shown over its lifetime.
+    const initialWords = getRandomWords(settings.startingWords, settings.difficulty, { enforceRatio: true, easyRatio: 0.6 });
     // Track words that have actually been shown to the describer (for review)
     rooms[roomCode].shownWords = [...initialWords];
     rooms[roomCode].guessedWords = [];
     // Create a dedicated observer words list that preserves visibility state
     rooms[roomCode].observerWords = [...initialWords];
     rooms[roomCode].words = initialWords;
-    rooms[roomCode].remainingWords = allWords.slice(settings.startingWords);
+    rooms[roomCode].remainingWords = [];
     rooms[roomCode].roundActive = true;
     rooms[roomCode].currentRound++;
 
@@ -512,12 +539,13 @@ io.on('connection', (socket) => {
         // Reset ready flags for next round
         rooms[roomCode].players.forEach(p => p.ready = false);
 
-        // Setup progressive word reveal timer
-        if (rooms[roomCode].remainingWords.length > 0) {
+        // Setup progressive word reveal timer (the queue is topped up lazily
+        // by pullWords/ensureWordSupply, so this never runs out of words to draw)
+        {
             if (rooms[roomCode].wordTimer) clearInterval(rooms[roomCode].wordTimer);
             rooms[roomCode].wordTimer = setInterval(() => {
-                if (rooms[roomCode].remainingWords.length > 0 && rooms[roomCode].roundActive) {
-                    const [newWord] = pullWords(rooms[roomCode], 1);
+                const [newWord] = pullWords(rooms[roomCode], 1);
+                if (rooms[roomCode].roundActive && newWord) {
                     addWordsToRoom(rooms[roomCode], [newWord]);
 
                     // Send new word to current describer and other team
