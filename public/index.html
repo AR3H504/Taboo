@@ -37,6 +37,8 @@
       <h2 id="reviewTitle">Round Review</h2>
       <p id="reviewSubtitle" style="opacity:0.8;">Review the words and guesses from the round.</p>
       <div id="reviewWords" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; max-height:300px; overflow:auto;"></div>
+      <h3 id="reviewGuessersTitle" style="margin:20px 0 8px; font-size:1rem; opacity:0.8;">Guessers this round</h3>
+      <div id="reviewGuessers" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
       <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end;">
         <button id="closeReviewBtn" style="background:#888;">Close</button>
       </div>
@@ -1320,61 +1322,78 @@
         const reviewTitle = document.getElementById('reviewTitle');
         const reviewWords = document.getElementById('reviewWords');
         const reviewSubtitle = document.getElementById('reviewSubtitle');
+        const reviewGuessers = document.getElementById('reviewGuessers');
+        const reviewGuessersTitle = document.getElementById('reviewGuessersTitle');
         if (!reviewModal || !reviewWords) return;
 
         // Show the modal
         reviewModal.style.display = 'flex';
-  // payload: { team, shownWords, guessedWords }
-  const teamName = payload.team || 'team';
-  const roundNum = payload.roundNumber || '?';
-  reviewTitle.textContent = `Round ${roundNum} Review — ${teamName.toUpperCase()} Team`;
-  reviewSubtitle.textContent = 'Words shown to the describer this round (guessed ones highlighted)';
-  reviewWords.innerHTML = '';
-  // guessedWords and shownWords may be arrays of strings or objects {word, points}
-  const guessedSet = new Set((payload.guessedWords || []).map(w => {
-    if (!w) return '';
-    return (typeof w === 'string') ? w.toLowerCase() : ((w.word) ? String(w.word).toLowerCase() : String(w).toLowerCase());
-  }));
-  (payload.shownWords || []).forEach(w => {
+        // payload: { team, roundNumber, words: [{word, status, points, originalPoints, partialPoints, guessedBy}] }
+        const teamName = payload.team || 'team';
+        const roundNum = payload.roundNumber || '?';
+        const words = payload.words || [];
+        reviewTitle.textContent = `Round ${roundNum} Review — ${teamName.toUpperCase()} Team`;
+        reviewSubtitle.textContent = 'Words shown to the describer this round (guessed ones highlighted)';
+        reviewWords.innerHTML = '';
+
+        words.forEach(w => {
           const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
+          const status = (w && typeof w === 'object') ? w.status : null;
           const el = document.createElement('div');
           el.className = 'team-guess';
           el.style.padding = '8px 12px';
           el.style.borderRadius = '8px';
           el.style.margin = '4px';
           el.style.display = 'inline-block';
-          
-          // Find the matched word in guessedWords to get full details
-          const matchedWord = (payload.guessedWords || []).find(gw => {
-            if (!gw) return false;
-            const gwText = typeof gw === 'string' ? gw : (gw.word || '');
-            return gwText.toLowerCase() === String(text).toLowerCase();
-          });
-          
-          const pts = matchedWord ? (matchedWord.points || 0) : 
-                     (typeof w === 'object' && w && w.points) ? w.points : null;
-          const isPartial = matchedWord && matchedWord.isPartialMatch && !matchedWord.completed;
-          
-          if (guessedSet.has(String(text).toLowerCase())) {
-            if (isPartial) {
-              // Partial match - yellow styling
-              el.style.background = 'rgba(241, 196, 15, 0.12)';
-              el.style.border = '1px solid rgba(241, 196, 15, 0.4)';
-              el.innerHTML = `${text} (partial)${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
-            } else {
-              // Full match - green styling
-              el.style.background = 'rgba(46, 204, 113, 0.12)';
-              el.style.border = '1px solid rgba(46, 204, 113, 0.4)';
-              el.innerHTML = `${text} ✓${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
-            }
+
+          if (status === 'done') {
+            const pts = w.points || w.originalPoints || null;
+            el.style.background = 'rgba(46, 204, 113, 0.12)';
+            el.style.border = '1px solid rgba(46, 204, 113, 0.4)';
+            el.innerHTML = `${text} ✓${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+          } else if (status === 'partial') {
+            const pts = w.partialPoints || null;
+            el.style.background = 'rgba(241, 196, 15, 0.12)';
+            el.style.border = '1px solid rgba(241, 196, 15, 0.4)';
+            el.innerHTML = `${text} (partial)${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
           } else {
-            // Not guessed - red styling
             el.style.background = 'rgba(231, 76, 60, 0.06)';
             el.style.border = '1px solid rgba(231, 76, 60, 0.15)';
-            el.innerHTML = `${text}${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+            el.innerHTML = text;
           }
           reviewWords.appendChild(el);
         });
+
+        // Tally points per guesser for this round, from the same word list -
+        // includes partial credit on words that never got fully completed.
+        if (reviewGuessers) {
+          const totals = new Map();
+          words.forEach(w => {
+            if (!w || !w.guessedBy) return;
+            const earned = w.status === 'done' ? (w.points || w.originalPoints || 0)
+              : w.status === 'partial' ? (w.partialPoints || 0)
+              : 0;
+            totals.set(w.guessedBy, (totals.get(w.guessedBy) || 0) + earned);
+          });
+
+          reviewGuessers.innerHTML = '';
+          if (totals.size === 0) {
+            reviewGuessers.innerHTML = '<div style="opacity:0.7;">Nobody guessed anything this round.</div>';
+          } else {
+            [...totals.entries()]
+              .sort((a, b) => b[1] - a[1])
+              .forEach(([name, points]) => {
+                const el = document.createElement('div');
+                el.className = 'team-guess correct';
+                el.style.padding = '8px 12px';
+                el.style.borderRadius = '8px';
+                el.style.display = 'inline-block';
+                el.innerHTML = `${name}<div class="word-points">${points} pt${points === 1 ? '' : 's'}</div>`;
+                reviewGuessers.appendChild(el);
+              });
+          }
+          if (reviewGuessersTitle) reviewGuessersTitle.style.display = '';
+        }
 
         // Also ensure observers can see the guessing area (so they can view teamGuesses)
         const guessingArea = document.querySelector('.guessing-area');

@@ -127,7 +127,7 @@ function ensureWordSupply(room, minCount) {
     if (!room.remainingWords) room.remainingWords = [];
     if (room.remainingWords.length >= minCount) return;
 
-    const shownTexts = new Set((room.shownWords || []).map(w => w.word.toLowerCase()));
+    const shownTexts = new Set((room.observerWords || []).map(w => w.word.toLowerCase()));
     const need = Math.max(minCount - room.remainingWords.length, 20); // draw generously so this isn't hit every guess
     const difficulty = (room.settings && room.settings.difficulty) || 'mixed';
 
@@ -154,8 +154,6 @@ function addWordsToRoom(room, words) {
     for (const w of words) {
         room.words.push(w);
         room.observerWords.push(w);
-        if (!room.shownWords) room.shownWords = [];
-        room.shownWords.push(w);
     }
 }
 
@@ -185,9 +183,6 @@ io.on('connection', (socket) => {
             },
             roundActive: false,
             inReview: false,
-            // Per-round tracking
-            shownWords: [],
-            guessedWords: [],
             settings: {
                 roundDuration: 90,
                 // roundsPerTeam: number of rounds each team will play (so total rounds = roundsPerTeam * 2)
@@ -491,10 +486,10 @@ io.on('connection', (socket) => {
     // in the guess handler pull through it), so a round never runs dry no
     // matter how many words end up getting shown over its lifetime.
     const initialWords = getRandomWords(settings.startingWords, settings.difficulty, { enforceRatio: true, easyRatio: 0.6 });
-    // Track words that have actually been shown to the describer (for review)
-    rooms[roomCode].shownWords = [...initialWords];
-    rooms[roomCode].guessedWords = [];
-    // Create a dedicated observer words list that preserves visibility state
+    // observerWords accumulates every word shown this round (active, partial,
+    // and done - words are only ever removed from `words`, never from this),
+    // so it doubles as both the "shown this round" history and the live
+    // opposing-team view - the single source of truth for round review too.
     rooms[roomCode].observerWords = [...initialWords];
     rooms[roomCode].words = initialWords;
     rooms[roomCode].remainingWords = [];
@@ -593,12 +588,14 @@ io.on('connection', (socket) => {
                     rooms[roomCode].inReview = true;
                 try {
                     io.to(roomCode).emit('roundEnded');
-                    // Emit review payload for clients to display review UI
+                    // Emit review payload for clients to display review UI.
+                    // Each word carries its own status/points/guessedBy, so
+                    // the client can render word state and a per-guesser
+                    // points breakdown from one list.
                     io.to(roomCode).emit('roundReview', {
                         team,
                         roundNumber: rooms[roomCode].currentRound,
-                        shownWords: rooms[roomCode].shownWords || [],
-                        guessedWords: rooms[roomCode].guessedWords || []
+                        words: rooms[roomCode].observerWords || []
                     });
 
                     // Check if this was the last round
@@ -730,8 +727,9 @@ io.on('connection', (socket) => {
             wordObj.guessedBy = player.name;
             const idx = room.words.indexOf(wordObj);
             if (idx !== -1) room.words.splice(idx, 1);
-            if (!room.guessedWords) room.guessedWords = [];
-            room.guessedWords.push(wordObj);
+            // wordObj stays in room.observerWords (same reference, status now
+            // 'done') - that's what round review and the opposing team's
+            // progress view both read from, so no separate tracking needed here.
 
             // The team burned through every word currently in play - don't make
             // them wait out the rest of the normal reveal interval for the next
