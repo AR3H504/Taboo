@@ -118,6 +118,23 @@ function getRandomWords(n, difficulty = 'mixed', options = {}) {
     return shuffled.slice(0, n).map(instantiateWord);
 }
 
+// Pull up to `count` words off the room's reveal queue.
+function pullWords(room, count) {
+    if (!room.remainingWords || room.remainingWords.length === 0) return [];
+    return room.remainingWords.splice(0, count);
+}
+
+// Add already-pulled words into the room's live word state (no emits - callers
+// decide what to broadcast and when).
+function addWordsToRoom(room, words) {
+    for (const w of words) {
+        room.words.push(w);
+        room.observerWords.push(w);
+        if (!room.shownWords) room.shownWords = [];
+        room.shownWords.push(w);
+    }
+}
+
 // Fuzzy-match tolerance scales with word length so short words ("poe" vs a
 // 4-letter target) aren't absurdly forgiving while long words still allow a
 // couple of typos. Returns null (no fuzzy leniency) for very short words.
@@ -500,13 +517,9 @@ io.on('connection', (socket) => {
             if (rooms[roomCode].wordTimer) clearInterval(rooms[roomCode].wordTimer);
             rooms[roomCode].wordTimer = setInterval(() => {
                 if (rooms[roomCode].remainingWords.length > 0 && rooms[roomCode].roundActive) {
-                    const newWord = rooms[roomCode].remainingWords.shift();
-                    // Add word to room's word list only once
-                    rooms[roomCode].words.push(newWord);
-                    // Track that this word was shown to the describer
-                    if (!rooms[roomCode].shownWords) rooms[roomCode].shownWords = [];
-                    rooms[roomCode].shownWords.push(newWord);
-                    
+                    const [newWord] = pullWords(rooms[roomCode], 1);
+                    addWordsToRoom(rooms[roomCode], [newWord]);
+
                     // Send new word to current describer and other team
                     const otherTeam = team === 'red' ? 'blue' : 'red';
                     
@@ -526,8 +539,6 @@ io.on('connection', (socket) => {
 
                     // Also send a room-level update for observers
                     try {
-                        // Add new word to observer list and emit
-                        rooms[roomCode].observerWords.push(newWord);
                         io.to(roomCode).emit('observerWordsRoom', { team, words: rooms[roomCode].observerWords });
                     } catch (err) {
                         console.error('Failed to emit observerWordsRoom (timer):', err);
@@ -694,6 +705,14 @@ io.on('connection', (socket) => {
             if (idx !== -1) room.words.splice(idx, 1);
             if (!room.guessedWords) room.guessedWords = [];
             room.guessedWords.push(wordObj);
+
+            // The team burned through every word currently in play - don't make
+            // them wait out the rest of the normal reveal interval for the next
+            // one. Drop in up to 5 more right away; the regular timer keeps
+            // ticking on its own schedule alongside this.
+            if (room.words.length === 0) {
+                addWordsToRoom(room, pullWords(room, 5));
+            }
         }
 
         function broadcastRoundState() {
