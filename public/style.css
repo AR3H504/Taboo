@@ -488,14 +488,18 @@ input:focus {
 .team-selection { margin: 0.5rem 0; }
 .team-selection > label { font-weight: 600; font-size: 0.9rem; }
 
-/* Once you're actually in a room, the create/join/team-pick controls are
-   done being useful - collapse them so they stop taking up space above the
-   things that matter mid-game (word list, guesses, ready/switch-role). */
+/* Once you're actually in a room, creating a room / entering a room code or
+   name are done being useful - collapse those so they stop taking up space
+   above the things that matter mid-game. The team-pick buttons stay: they
+   double as the team-switch control between rounds. */
 .room-controls.joined #createRoomBtn,
 .room-controls.joined #roomCodeInput,
-.room-controls.joined #nameInput,
-.room-controls.joined .team-selection {
+.room-controls.joined #nameInput {
     display: none;
+}
+
+.room-controls.joined .team-selection > label {
+    font-size: 0.8rem;
 }
 
 .join-options { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin: 0.75rem 0; }

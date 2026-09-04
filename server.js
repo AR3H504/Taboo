@@ -223,20 +223,25 @@ io.on('connection', (socket) => {
         // When socket id already present, allow update (existing connection)
         const existingPlayer = rooms[roomCode].players.find(p => p.id === socket.id);
         if (existingPlayer) {
-            // Disallow describers from changing role or switching teams while their team is currently playing
-            const playingTeam = rooms[roomCode].currentTurn;
-            if (rooms[roomCode].roundActive && existingPlayer.role === 'describer' && existingPlayer.team === playingTeam && (existingPlayer.team !== team || existingPlayer.role !== role)) {
-                console.log(`Blocked describer switch attempt mid-round (playing team): ${existingPlayer.name} (${socket.id}) tried to change to ${team}/${role}`);
-                socket.emit('error', 'Describers on the playing team cannot change role or switch teams while a round is active');
+            // Switching teams mid-round is a cheating vector (e.g. hop to the
+            // observing team to see the words, then hop back as a guesser),
+            // so it's blocked for anyone while a round is active - freely
+            // allowed between rounds. Role changes on your current team are
+            // still restricted separately for the active describer below.
+            if (rooms[roomCode].roundActive && existingPlayer.team !== team) {
+                console.log(`Blocked team switch mid-round: ${existingPlayer.name} (${socket.id}) tried to switch from ${existingPlayer.team} to ${team}`);
+                socket.emit('error', "You can't switch teams while a round is active - wait until it ends");
                 return;
             }
 
-            // If player previously switched mid-round, prevent switching back until round end
-            if (rooms[roomCode].roundActive && existingPlayer.switchedFrom && team === existingPlayer.switchedFrom) {
-                console.log(`Blocked switch-back mid-round: ${existingPlayer.name} (${socket.id}) attempted to switch back to ${team}`);
-                socket.emit('error', 'You cannot switch back to your previous team until the round ends');
+            // Disallow the active describer from changing role while their team is currently playing
+            const playingTeam = rooms[roomCode].currentTurn;
+            if (rooms[roomCode].roundActive && existingPlayer.role === 'describer' && existingPlayer.team === playingTeam && existingPlayer.role !== role) {
+                console.log(`Blocked describer role switch mid-round: ${existingPlayer.name} (${socket.id}) tried to change to ${role}`);
+                socket.emit('error', 'The describer cannot change role while a round is active');
                 return;
             }
+
             // If nothing changed, just return current state
             if (existingPlayer.team === team && existingPlayer.role === role && existingPlayer.name === name) {
                 // re-emit state so client stays in sync
@@ -273,12 +278,6 @@ io.on('connection', (socket) => {
                 }
                 // Add to new team's players list (we'll update the existingPlayer below)
                 rooms[roomCode].teams[team].players.push(existingPlayer);
-                // If this change happens during an active round and the player was a guesser, mark that they switched
-                // If they switched away from the playing team during an active round, record switchedFrom so they can't switch back
-                if (rooms[roomCode].roundActive && existingPlayer.role !== 'describer' && existingPlayer.team === playingTeam) {
-                    existingPlayer.switchedFrom = existingPlayer.team;
-                    console.log(`Player ${existingPlayer.name} (${existingPlayer.id}) switched teams mid-round from ${existingPlayer.switchedFrom} -> ${team}`);
-                }
             }
 
             // Update describer slots
@@ -672,8 +671,8 @@ io.on('connection', (socket) => {
                     console.error('Failed to emit roundReview:', err);
                 }
 
-                        // Reset ready flags and clear mid-round switch locks for next round
-                        rooms[roomCode].players.forEach(p => { p.ready = false; p.switchedFrom = null; });
+                        // Reset ready flags for next round
+                        rooms[roomCode].players.forEach(p => { p.ready = false; });
 
                             // Broadcast updated game state with new turn
                             io.to(roomCode).emit('updateGameState', {
