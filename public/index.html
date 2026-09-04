@@ -846,22 +846,6 @@
       }
     }
 
-    // Listen for guesses from other players
-    socket.on('announceGuess', (guess, player) => {
-      try {
-        console.log('Live guess announced:', { guess, player });
-        // Don't show live guess for completing a partial match
-        if (typeof guess === 'object' && guess.isCompletingPartial) {
-          return;
-        }
-        // Normalize the guess to string for live display
-        const guessText = typeof guess === 'object' ? (guess.word || guess.toString()) : guess;
-        addTeamGuess(guessText, player, false);
-      } catch (err) {
-        console.error('Error handling announceGuess:', err);
-      }
-    });
-
     socket.on("correctGuess", (guess, player) => {
       try {
           console.log('Received correctGuess:', { guess, player });

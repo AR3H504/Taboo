@@ -63,6 +63,24 @@ app.use(express.static('public'));
 
 let rooms = {};
 
+// Every word handed out to a room must be its own object instance. The pack
+// arrays in wordPacks are loaded once at startup and reused for every game;
+// if a room mutated those shared objects directly (tracking partial-match
+// state, completion, etc.) then a word drawn again later - in this room's
+// next round, or in any other room - would start out already carrying stale
+// state from the last time it was used, silently corrupting scoring.
+function instantiateWord(w) {
+    return {
+        word: w.word,
+        difficulty: w.difficulty,
+        originalPoints: w.points,
+        points: w.points,
+        status: 'active', // 'active' | 'partial' | 'done'
+        partialPoints: 0,
+        guessedBy: null
+    };
+}
+
 function getRandomWords(n, difficulty = 'mixed', options = {}) {
     // options: { enforceRatio: bool, easyRatio: 0..1 }
     const easy = wordPacks.easy || [];
@@ -70,11 +88,11 @@ function getRandomWords(n, difficulty = 'mixed', options = {}) {
 
     if (difficulty === 'easy') {
         const shuffled = [...easy].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, n);
+        return shuffled.slice(0, n).map(instantiateWord);
     }
     if (difficulty === 'medium') {
         const shuffled = [...medium].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, n);
+        return shuffled.slice(0, n).map(instantiateWord);
     }
 
     // Mixed difficulty
@@ -87,7 +105,7 @@ function getRandomWords(n, difficulty = 'mixed', options = {}) {
         const pickEasy = shuffledEasy.slice(0, numEasy);
         const pickMedium = shuffledMedium.slice(0, numMedium);
         const combined = pickEasy.concat(pickMedium).sort(() => 0.5 - Math.random());
-        return combined.slice(0, n);
+        return combined.slice(0, n).map(instantiateWord);
     }
 
     // Default: pool all words and randomize
@@ -97,7 +115,17 @@ function getRandomWords(n, difficulty = 'mixed', options = {}) {
         return [];
     }
     const shuffled = pool.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, n);
+    return shuffled.slice(0, n).map(instantiateWord);
+}
+
+// Fuzzy-match tolerance scales with word length so short words ("poe" vs a
+// 4-letter target) aren't absurdly forgiving while long words still allow a
+// couple of typos. Returns null (no fuzzy leniency) for very short words.
+function maxFuzzyDistance(word) {
+    if (word.length <= 3) return 0; // exact only
+    if (word.length <= 5) return 1;
+    if (word.length <= 8) return 2;
+    return 3;
 }
 
 io.on('connection', (socket) => {
@@ -384,8 +412,6 @@ io.on('connection', (socket) => {
 
     socket.on('startRound', (roomCode, duration = 60) => {
         if (!rooms[roomCode]) return;
-        // === MANDATORY FIX 4: Initialize completion tracking ===
-        rooms[roomCode].completedWords = []; // Reset for new round
         // Only the describer of the current team may start the round
         const team = rooms[roomCode].currentTurn;
         const teamDescriberId = rooms[roomCode].describers[team];
@@ -628,602 +654,135 @@ io.on('connection', (socket) => {
     });
 
     socket.on('guess', (roomCode, guess) => {
-        console.log(`Received guess "${guess}" in room ${roomCode} from socket ${socket.id}`);
-        
-        if (!rooms[roomCode]) {
-            console.log('Room not found:', roomCode);
-            return;
-        }
+        const room = rooms[roomCode];
+        if (!room) return;
 
-        // === MANDATORY FIX 1: Early completion check ===
+        const player = room.players.find(p => p.id === socket.id);
+        if (!player) return;
+        if (player.role === 'describer') return; // describers can't guess
+
         const normalizedGuess = (typeof guess === 'string' ? guess : String(guess)).trim().toLowerCase();
-        
-        // Initialize completedWords if it doesn't exist
-        if (!rooms[roomCode].completedWords) rooms[roomCode].completedWords = [];
-        
-        // Check if word was already completed (BEFORE any processing)
-        if (rooms[roomCode].completedWords.includes(normalizedGuess)) {
-            console.log('Word already completed (early check):', normalizedGuess);
+        if (!normalizedGuess) return;
+
+        console.log(`Guess "${normalizedGuess}" in room ${roomCode} from ${player.name}`);
+
+        // A word already fully completed this round (still sitting in
+        // observerWords with status 'done') just gets a quiet ack, no re-announce.
+        const alreadyDone = room.observerWords.find(w => w.status === 'done' && w.word.toLowerCase() === normalizedGuess);
+        if (alreadyDone) {
             socket.emit('alreadyGuessed', normalizedGuess);
             return;
         }
-        // === END MANDATORY FIX 1 ===
 
-        const player = rooms[roomCode].players.find(p => p.id === socket.id);
-        if (!player) {
-            console.log('Player not found for socket:', socket.id);
-            return;
+        // Live "X guessed Y" bubble for teammates watching.
+        socket.to(roomCode).emit('announceGuess', normalizedGuess, { id: player.id, name: player.name });
+
+        function awardPoints(amount) {
+            player.score = (player.score || 0) + amount;
+            const playerEntry = room.players.find(p => p.id === player.id);
+            if (playerEntry) playerEntry.score = player.score;
+            if (player.team && room.teams[player.team]) {
+                room.teams[player.team].score += amount;
+            }
         }
 
-        console.log('Current room state:', {
-            roomCode,
-            players: rooms[roomCode].players,
-            words: rooms[roomCode].words,
-            describers: rooms[roomCode].describers,
-            currentTurn: rooms[roomCode].currentTurn
-        });
-
-        // Don't allow someone with the describer role to guess
-        if (player.role === 'describer') {
-            console.log('Player with describer role tried to guess, ignoring');
-            return;
+        function finishWord(wordObj) {
+            wordObj.status = 'done';
+            wordObj.points = wordObj.originalPoints;
+            wordObj.guessedBy = player.name;
+            const idx = room.words.indexOf(wordObj);
+            if (idx !== -1) room.words.splice(idx, 1);
+            if (!room.guessedWords) room.guessedWords = [];
+            room.guessedWords.push(wordObj);
         }
 
-        // Make guess lowercase and trim spaces (already normalized earlier for the early completion check)
-        console.log('Normalized guess:', normalizedGuess);
-
-        // Ensure room has a completedWords tracker (fast checks to prevent re-scoring)
-        if (!rooms[roomCode].completedWords) rooms[roomCode].completedWords = [];
-
-        // Initialize tracking arrays if they don't exist
-        if (!rooms[roomCode].guessedWords) rooms[roomCode].guessedWords = [];
-        
-        // Announce the guess to all players in the room so both teams can see it live
-        try {
-            // Only announce if this exact word hasn't been guessed before
-            const isNewGuess = !rooms[roomCode].guessedWords.some(w => 
-                w && w.word && w.word.toLowerCase() === normalizedGuess
-            );
-            if (isNewGuess) {
-                socket.to(roomCode).emit('announceGuess', normalizedGuess, { id: player.id, name: player.name });
+        function broadcastRoundState() {
+            const currentDescriberId = room.describers[room.currentTurn];
+            if (currentDescriberId) {
+                io.to(currentDescriberId).emit('describerWords', room.words);
             }
-        } catch (err) {
-            console.error('Failed to announce guess:', err);
-        }
-
-        // Check if word was already completed (after announcing, before scoring)
-        const alreadyCompleted = rooms[roomCode].completedWords.includes(normalizedGuess) ||
-            rooms[roomCode].guessedWords.some(w => {
-                if (!w) return false;
-                const wordText = (typeof w === 'string') ? w : (w.word || '');
-                // Word is considered completed if it's either a full guess or was a partial match that was completed
-                const isCompleted = !w.isPartialMatch || w.wasCompleted || w.completed;
-                return isCompleted && wordText.toLowerCase() === normalizedGuess;
-            });
-            
-        if (alreadyCompleted) {
-            // Make sure we persist this into completedWords for future quick checks
-            if (!rooms[roomCode].completedWords.includes(normalizedGuess)) {
-                rooms[roomCode].completedWords.push(normalizedGuess);
-            }
-            console.log('Word was already completed:', normalizedGuess);
-            socket.emit('alreadyGuessed', normalizedGuess);
-            return;
-        }
-        
-        console.log('Available words:', rooms[roomCode].words);
-
-        // First check for exact matches, then check for close matches
-        let wordIndex = -1;
-        let isPartialMatch = false;
-        let closestWord = null;
-        let isCompletingPartialMatch = false;
-
-        // First check if this completes any previously guessed partial word
-        const partialMatch = rooms[roomCode].guessedWords ? rooms[roomCode].guessedWords.find(w => {
-            if (!w || !w.isPartialMatch) return false;
-            return w.word.toLowerCase() === normalizedGuess;
-        }) : null;
-
-        if (partialMatch) {
-            console.log('Found completion for previously guessed partial:', partialMatch);
-            isCompletingPartialMatch = true;
-            closestWord = {...partialMatch}; // Copy to preserve original state
-            // Calculate remaining points (full - partial)
-            const basePoints = partialMatch.originalPoints || 
-                (partialMatch.difficulty === 'medium' ? 15 : 6);
-            const remaining = basePoints - (partialMatch.partialPoints || 0);
-            
-            // Update player score
-            player.score = (player.score || 0) + remaining;
-            if (player.team && rooms[roomCode].teams[player.team]) {
-                rooms[roomCode].teams[player.team].score += remaining;
-            }
-            
-            // Emit completion silently (don't announce the guess)
-            io.to(roomCode).emit('correctGuess', {
-                word: partialMatch.word,
-                points: remaining,
-                basePoints: basePoints,
-                partialPoints: partialMatch.partialPoints,
-                isCompletingPartial: true
-            }, player);
-            
-            // === CRITICAL FIX: Update observer words for this completion ===
-            const wordText = partialMatch.word;
-            if (wordText) {
-                const obsIdx = rooms[roomCode].observerWords.findIndex(w => {
-                    const wText = typeof w === 'string' ? w : (w && w.word);
-                    return wText === wordText;
-                });
-                if (obsIdx !== -1) {
-                    const wordObj = typeof rooms[roomCode].observerWords[obsIdx] === 'string' 
-                        ? { word: rooms[roomCode].observerWords[obsIdx] }
-                        : { ...rooms[roomCode].observerWords[obsIdx] };
-                    
-                    // Clear partial flags and set completion flags (GREEN state)
-                    wordObj.completed = true;
-                    wordObj.isCorrect = true;
-                    wordObj.isPartialMatch = false;
-                    wordObj.wasCompleted = true;
-                    wordObj.points = basePoints; // Full points
-                    wordObj.guessedBy = player.name;
-                    
-                    rooms[roomCode].observerWords[obsIdx] = wordObj;
-                }
-            }
-            // === END CRITICAL FIX ===
-            
-            // Update game state with full context
-            const gameState = {
-                players: rooms[roomCode].players.map(p => ({...p})),
+            io.to(roomCode).emit('observerWordsRoom', { team: room.currentTurn, words: room.observerWords });
+            io.to(roomCode).emit('updateGameState', {
+                describers: { ...room.describers },
+                currentTurn: room.currentTurn,
+                currentRound: room.currentRound,
+                roundActive: !!room.roundActive,
+                settings: room.settings,
+                players: room.players.map(p => ({ ...p })),
                 teams: {
-                    red: { score: rooms[roomCode].teams.red.score },
-                    blue: { score: rooms[roomCode].teams.blue.score }
-                },
-                currentTurn: rooms[roomCode].currentTurn,
-                roundActive: rooms[roomCode].roundActive,
-                describers: rooms[roomCode].describers
-            };
-            // Record completed word to prevent re-scoring
-            try {
-                // Atomic update of completion tracking
-                const canon = (partialMatch.word || '').toString().toLowerCase();
-                if (canon) {
-                    rooms[roomCode].completedWords = rooms[roomCode].completedWords || [];
-                    if (!rooms[roomCode].completedWords.includes(canon)) {
-                        rooms[roomCode].completedWords.push(canon);
-                    }
-                    // Also mark the word as completed in guessedWords
-                    const guessedWord = rooms[roomCode].guessedWords.find(w => 
-                        w && w.word && w.word.toLowerCase() === canon
-                    );
-                    if (guessedWord) {
-                        guessedWord.completed = true;
-                        guessedWord.wasCompleted = true;
-                        guessedWord.isPartialMatch = false; // Clear partial flag
-                    }
-                }
-            } catch (e) { console.error('Failed to record completed partial match', e); }
-
-            // === NEW FIX: Update describer view ===
-            const currentTeam = rooms[roomCode].currentTurn;
-            const currentDescriberId = rooms[roomCode].describers[currentTeam];
-            if (currentDescriberId) {
-                io.to(currentDescriberId).emit('describerWords', rooms[roomCode].words);
-            }
-
-            // Notify ALL clients of observer words update
-            io.to(roomCode).emit('observerWordsRoom', { 
-                team: rooms[roomCode].currentTurn,
-                words: rooms[roomCode].observerWords 
-            });
-
-            io.to(roomCode).emit('updateGameState', gameState);
-            return;
-        }
-
-        // Atomically check and find the word to prevent race conditions
-        let targetWord = null;
-        let exactMatch = false;
-        
-        // First pass: look for exact matches (including partially matched words)
-        for (let i = 0; i < rooms[roomCode].words.length; i++) {
-            const w = rooms[roomCode].words[i];
-            if (!w) continue;
-            
-            const wordText = typeof w === 'string' ? w : (w.word || '');
-            if (wordText.toLowerCase() === normalizedGuess) {
-                targetWord = w;
-                wordIndex = i;
-                exactMatch = true;
-                // If this was a partial match, mark it
-                if (w.isPartialMatch) {
-                    isCompletingPartialMatch = true;
-                    closestWord = {...w};
-                }
-                break;
-            }
-        }
-
-        // If no exact match, check for close matches (within 3 character edits)
-        if (!exactMatch) {
-            const MAX_DISTANCE = 3;
-            let minDistance = MAX_DISTANCE + 1;
-            
-            rooms[roomCode].words.forEach((w, idx) => {
-                if (!w) return;
-                // Don't skip partial matches - we want to allow completion
-                const wordText = (typeof w === 'string' ? w : w.word || '').toLowerCase();
-                const distance = getLevenshteinDistance(wordText, normalizedGuess);
-                
-                // If this is an exact match with a partial word, prioritize that
-                if (distance === 0 && w.isPartialMatch) {
-                    console.log('Found exact match for partial word in distance check:', w);
-                    minDistance = 0;
-                    wordIndex = idx;
-                    isCompletingPartialMatch = true;
-                    closestWord = w;
-                    return;
-                }
-                
-                // Otherwise track the closest match that isn't already partial
-                if (distance <= MAX_DISTANCE && distance < minDistance && !w.isPartialMatch) {
-                    minDistance = distance;
-                    wordIndex = idx;
-                    isPartialMatch = true;
-                    closestWord = w;
+                    red: { score: room.teams.red.score },
+                    blue: { score: room.teams.blue.score }
                 }
             });
         }
 
-        if (wordIndex === -1) {
-            // No match found at all
-            io.to(roomCode).emit('wrongGuess', guess, player);
-            return;
-        }
-
-        // Found a match - get word and handle points
-        const matchedWord = rooms[roomCode].words[wordIndex];
-        console.log('Matched word:', matchedWord);
-
-        // Defensive guards to prevent double-scoring / spam exploits
-        try {
-            // canonical text for matching
-            const canonicalText = (typeof matchedWord === 'string') ? matchedWord.toLowerCase() : ((matchedWord && (matchedWord.word || ''))).toLowerCase();
-
-            // ensure completedWords exists
-            if (!rooms[roomCode].completedWords) rooms[roomCode].completedWords = [];
-
-            // If this word is already recorded as completed, reject immediately
-            if (canonicalText && rooms[roomCode].completedWords.includes(canonicalText)) {
-                console.log('Attempt to score already-completed word (completedWords):', canonicalText);
-                socket.emit('alreadyGuessed', canonicalText);
-                return;
-            }
-
-            // If matchedWord object itself indicates completion, reject
-            if (matchedWord && matchedWord.completed) {
-                const txt = canonicalText || normalizedGuess;
-                console.log('Attempt to score already-completed word (matchedWord.completed):', txt);
-                // ensure it's recorded in completedWords for future checks
-                if (txt && !rooms[roomCode].completedWords.includes(txt)) rooms[roomCode].completedWords.push(txt);
-                socket.emit('alreadyGuessed', txt);
-                return;
-            }
-
-            // Prevent duplicate partial awards
-            if (isPartialMatch && matchedWord && matchedWord.partialAwarded) {
-                const txt = (typeof matchedWord === 'string') ? matchedWord.toLowerCase() : ((matchedWord && (matchedWord.word || ''))).toLowerCase();
-                console.log('Partial points already awarded for this word, ignoring repeated partial guess:', txt);
-                socket.emit('alreadyGuessed', txt || normalizedGuess);
-                return;
-            }
-
-            // For completing a partial match, ensure it's not already completed
-            if (isCompletingPartialMatch && matchedWord && (matchedWord.completed || matchedWord.isCompletingPartial || matchedWord.wasCompleted)) {
-                const txt = (typeof matchedWord === 'string') ? matchedWord.toLowerCase() : ((matchedWord && (matchedWord.word || ''))).toLowerCase();
-                console.log('Completing partial but word is already marked completed, ignoring:', txt);
-                if (txt && !rooms[roomCode].completedWords.includes(txt)) rooms[roomCode].completedWords.push(txt);
-                socket.emit('alreadyGuessed', txt || normalizedGuess);
-                return;
-            }
-        } catch (guardErr) {
-            console.error('Error in score-guard checks:', guardErr);
-        }
-
-        try {
-            
-            // Calculate points based on match type
-            const oldScore = player.score || 0;
-            let basePoints = (typeof matchedWord === 'object' && matchedWord.points) 
-                ? matchedWord.points 
-                : (typeof matchedWord === 'object' && matchedWord.difficulty === 'medium' ? 15 : 6);
-            
-            let points;
-            if (isCompletingPartialMatch && matchedWord.isPartialMatch) {
-                // They got it exactly right after a partial match - award only remaining points
-                const partialPoints = matchedWord.partialPoints || Math.floor(basePoints / 2);
-                const remainingPoints = basePoints - partialPoints;
-                points = remainingPoints;
-                console.log('COMPLETING PARTIAL MATCH:', {
-                    word: matchedWord,
-                    basePoints,
-                    partialPoints,
-                    remainingPoints,
-                    isCompletingPartialMatch
-                });
-                // Atomically mark completed to avoid race awarding
-                try {
-                    matchedWord.isPartialMatch = false; // Clear the partial match flag
-                    matchedWord.completedPartial = true; // Mark as completed
-                    matchedWord.isCompletingPartial = true; // Mark as completing partial
-                    matchedWord.completed = true; // Canonical completed flag
-                    matchedWord.points = points; // Update points for this completion
-                    // Ensure canonical recorded
-                    const txt = (typeof matchedWord === 'string') ? matchedWord.toLowerCase() : ((matchedWord && (matchedWord.word || '')).toLowerCase());
-                    if (txt && !rooms[roomCode].completedWords.includes(txt)) rooms[roomCode].completedWords.push(txt);
-                } catch (e) { console.error('Failed to mark matchedWord as completed atomically', e); }
-                
-                // === CRITICAL FIX: Update observer words for completed partial match ===
-                const wordText = typeof matchedWord === 'string' ? matchedWord : (matchedWord && matchedWord.word);
-                if (wordText) {
-                    // Find and update in observer list
-                    const obsIdx = rooms[roomCode].observerWords.findIndex(w => {
-                        const wText = typeof w === 'string' ? w : (w && w.word);
-                        return wText === wordText;
-                    });
-                    if (obsIdx !== -1) {
-                        const wordObj = typeof rooms[roomCode].observerWords[obsIdx] === 'string' 
-                            ? { word: rooms[roomCode].observerWords[obsIdx] }
-                            : { ...rooms[roomCode].observerWords[obsIdx] };
-                        
-                        // Clear partial flags and set completion flags
-                        wordObj.completed = true;
-                        wordObj.isCorrect = true;
-                        wordObj.isPartialMatch = false;
-                        wordObj.wasCompleted = true;
-                        wordObj.points = basePoints; // Full points now
-                        wordObj.guessedBy = player.name;
-                        
-                        rooms[roomCode].observerWords[obsIdx] = wordObj;
-                    }
-                }
-                // === END CRITICAL FIX ===
-                
-                // Persist modifications back into the room's word list in case matchedWord was a reference copy
-                try {
-                    rooms[roomCode].words[wordIndex] = matchedWord;
-                    console.log('Persisted matchedWord after completion at index', wordIndex, matchedWord);
-                } catch (e) { console.error('Failed to persist matchedWord after completion', e); }
-            } else if (isPartialMatch) {
-                // New partial match - award half points
-                points = Math.floor(basePoints / 2);
-                console.log(`New partial match: base=${basePoints}, awarding=${points}`);
-                matchedWord.isPartialMatch = true;
-                matchedWord.originalPoints = basePoints;
-                matchedWord.partialPoints = points;
-                matchedWord.points = points; // Store current points
-                // Mark that we've awarded the partial points so future repeated partials won't award again
-                matchedWord.partialAwarded = true;
-                
-                // Update observer words list for partial match
-                const wordText = typeof matchedWord === 'string' ? matchedWord : (matchedWord && matchedWord.word);
-                if (wordText) {
-                    const obsIdx = rooms[roomCode].observerWords.findIndex(w => {
-                        const wText = typeof w === 'string' ? w : (w && w.word);
-                        return wText === wordText;
-                    });
-                    if (obsIdx !== -1) {
-                        const wordObj = typeof rooms[roomCode].observerWords[obsIdx] === 'string' 
-                            ? { word: rooms[roomCode].observerWords[obsIdx] }
-                            : { ...rooms[roomCode].observerWords[obsIdx] };
-                        
-                        // Set partial match flags (ORANGE state)
-                        wordObj.isPartialMatch = true;
-                        wordObj.partialPoints = points;
-                        wordObj.basePoints = basePoints;
-                        wordObj.originalPoints = basePoints;
-                        wordObj.guessedBy = player.name;
-                        wordObj.completed = false; // Ensure not marked as completed
-                        
-                        rooms[roomCode].observerWords[obsIdx] = wordObj;
-                    }
-                }
-                
-                // Persist modifications back into the room's word list
-                try {
-                    rooms[roomCode].words[wordIndex] = matchedWord;
-                    console.log('Persisted matchedWord for partial match at index', wordIndex, matchedWord);
-                } catch (e) { console.error('Failed to persist matchedWord for partial match', e); }
-            } else {
-                // Normal exact match - full points
-                points = basePoints;
-                console.log(`Full match: awarding=${points}`);
-                // Mark completed immediately and record canonical word text to block duplicate scoring
-                try {
-                    matchedWord.completed = true;
-                    const txt = (typeof matchedWord === 'string') ? matchedWord : (matchedWord && (matchedWord.word || ''));
-                    const lower = txt ? String(txt).toLowerCase() : normalizedGuess;
-                    if (!rooms[roomCode].completedWords) rooms[roomCode].completedWords = [];
-                    if (lower && !rooms[roomCode].completedWords.includes(lower)) rooms[roomCode].completedWords.push(lower);
-                } catch (e) { console.error('Failed to mark full match as completed early', e); }
-                matchedWord.points = points;
-
-                // === ADD THIS: Update observer words for normal exact match ===
-                const wordText = typeof matchedWord === 'string' ? matchedWord : (matchedWord && matchedWord.word);
-                if (wordText) {
-                    const obsIdx = rooms[roomCode].observerWords.findIndex(w => {
-                        const wText = typeof w === 'string' ? w : (w && w.word);
-                        return wText === wordText;
-                    });
-                    if (obsIdx !== -1) {
-                        const wordObj = typeof rooms[roomCode].observerWords[obsIdx] === 'string' 
-                            ? { word: rooms[roomCode].observerWords[obsIdx] }
-                            : { ...rooms[roomCode].observerWords[obsIdx] };
-                        
-                        // Set completion flags (GREEN state)
-                        wordObj.completed = true;
-                        wordObj.isCorrect = true;
-                        wordObj.isPartialMatch = false;
-                        wordObj.wasCompleted = true;
-                        wordObj.points = points;
-                        wordObj.guessedBy = player.name;
-                        
-                        rooms[roomCode].observerWords[obsIdx] = wordObj;
-                    }
-                }
-                // === END ADD ===
-            }
-
-            // Update player score
-            player.score = oldScore + points;
-            console.log(`Player ${player.name} score updated: ${oldScore} -> ${player.score} (+${points}${isPartialMatch ? ' (partial match)' : ''})`);
-                    
-
-            // Only remove the word if it's a full match or completing a partial match
-            if (!isPartialMatch) {
-                // Remove from active words list
-                rooms[roomCode].words.splice(wordIndex, 1);
-            }
-            // Update player's score in both the players array and their team
-            const playerIndex = rooms[roomCode].players.findIndex(p => p.id === player.id);
-            if (playerIndex !== -1) {
-                rooms[roomCode].players[playerIndex].score = player.score;
-            }
-
-            // Update team score
-            if (player.team && rooms[roomCode].teams[player.team]) {
-                rooms[roomCode].teams[player.team].score += points;
-                console.log(`Team ${player.team} score updated: +${points}`);
-                const wordText = typeof matchedWord === 'string' ? matchedWord : matchedWord.word;
-                console.log(`Team ${player.team} scored ${points} points for word "${wordText}", total: ${rooms[roomCode].teams[player.team].score}`);
-            }
-
-            // === NEW FIX: Update describer view for all guess types ===
-            const currentTeam = rooms[roomCode].currentTurn;
-            const currentDescriberId = rooms[roomCode].describers[currentTeam];
-            if (currentDescriberId) {
-                io.to(currentDescriberId).emit('describerWords', rooms[roomCode].words);
-            }
-
-            // For partial matches, we want to send the actual guess text along with the match info
-            if (isPartialMatch) {
-                console.log('Emitting partial match:', { guess: normalizedGuess, points, basePoints });
+        // 1) Exact text match against anything still in play (active or partial).
+        const exactWord = room.words.find(w => w.word.toLowerCase() === normalizedGuess);
+        if (exactWord) {
+            if (exactWord.status === 'partial') {
+                const remaining = exactWord.originalPoints - exactWord.partialPoints;
+                finishWord(exactWord);
+                awardPoints(remaining);
                 io.to(roomCode).emit('correctGuess', {
-                    word: normalizedGuess,
-                    isPartialMatch: true,
-                    points: points,
-                    basePoints: basePoints  // Add this
-                }, player);
-            } else if (isCompletingPartialMatch) {
-                console.log('Emitting completing partial match:', { 
-                    word: matchedWord.word, 
-                    points,
-                    basePoints: basePoints,
-                    partialPoints: matchedWord.partialPoints,
-                    remainingPoints: points
-                });
-                io.to(roomCode).emit('correctGuess', {
-                    ...matchedWord,
+                    word: exactWord.word,
                     isCompletingPartial: true,
-                    points: points,
-                    partialPoints: matchedWord.partialPoints,
-                    basePoints: basePoints
+                    points: remaining,
+                    basePoints: exactWord.originalPoints,
+                    partialPoints: exactWord.partialPoints
                 }, player);
             } else {
-                console.log('Emitting normal correct guess:', { word: matchedWord.word, points });
+                finishWord(exactWord);
+                awardPoints(exactWord.originalPoints);
                 io.to(roomCode).emit('correctGuess', {
-                    word: matchedWord.word,
-                    points: points
+                    word: exactWord.word,
+                    points: exactWord.originalPoints
                 }, player);
             }
-
-            // Track guessed word for review
-            try {
-                if (!rooms[roomCode].guessedWords) rooms[roomCode].guessedWords = [];
-                
-                // Update or store the word
-                let wordToStore;
-                if (isCompletingPartialMatch) {
-                    // Find and update the existing partial match
-                    const partialIndex = rooms[roomCode].guessedWords.findIndex(w => 
-                        w.word.toLowerCase() === normalizedGuess && w.isPartialMatch
-                    );
-                    if (partialIndex !== -1) {
-                        wordToStore = {...rooms[roomCode].guessedWords[partialIndex]};
-                        wordToStore.isPartialMatch = false; // No longer partial
-                        wordToStore.wasCompleted = true;    // Mark as completed
-                        wordToStore.completedPoints = points;
-                        rooms[roomCode].guessedWords[partialIndex] = wordToStore;
-                    }
-                } else {
-                    // Store new word
-                    wordToStore = {...matchedWord};
-                    if (isPartialMatch) {
-                        wordToStore.isPartialMatch = true;
-                        wordToStore.originalPoints = basePoints;
-                        wordToStore.partialPoints = points;
-                    }
-                    // Only add if not already in list
-                        if (!rooms[roomCode].guessedWords.some(w => {
-                            const wText = (typeof w === 'string') ? w : (w && w.word) || '';
-                            return wText && (wText === ((typeof wordToStore === 'string') ? wordToStore : wordToStore.word));
-                        })) {
-                            rooms[roomCode].guessedWords.push(wordToStore);
-                        }
-                }
-            } catch (err) {
-                console.error('Failed to track guessed word:', err);
-            }
-                // Ensure we record completed words in the dedicated list so future guesses can't award points
-                try {
-                    // Determine canonical word text to record
-                    let completedText = null;
-                    if (isCompletingPartialMatch) {
-                        completedText = (closestWord && (closestWord.word || String(closestWord))) || normalizedGuess;
-                    } else if (!isPartialMatch) {
-                        // For full matches, matchedWord may be an object or string
-                        completedText = (typeof matchedWord === 'string') ? matchedWord : (matchedWord && (matchedWord.word || normalizedGuess));
-                    }
-                    if (completedText) {
-                        const lower = completedText.toLowerCase();
-                        if (!rooms[roomCode].completedWords.includes(lower)) rooms[roomCode].completedWords.push(lower);
-                    }
-                } catch (e) {
-                    console.error('Failed to update completedWords list', e);
-                }
-            
-            // Notify ALL clients of observer words update
-            io.to(roomCode).emit('observerWordsRoom', { 
-                team: rooms[roomCode].currentTurn,
-                words: rooms[roomCode].observerWords 
-            });
-
-            // Then emit both players and team scores
-            const gameState = {
-                describers: {...rooms[roomCode].describers},
-                currentTurn: rooms[roomCode].currentTurn,
-                currentRound: rooms[roomCode].currentRound,
-                roundActive: !!rooms[roomCode].roundActive,
-                settings: rooms[roomCode].settings,
-                players: rooms[roomCode].players.map(p => ({...p})),
-                teams: {
-                    red: { score: rooms[roomCode].teams.red.score },
-                    blue: { score: rooms[roomCode].teams.blue.score }
-                }
-            };
-            io.to(roomCode).emit('updateGameState', gameState);
-            
-            // Log the final state
-            console.log('Updated room state:', {
-                roomCode,
-                players: rooms[roomCode].players,
-                words: rooms[roomCode].words
-            });
-        } catch (err) {
-            console.error('Failed to handle correct guess:', err);
+            broadcastRoundState();
+            return;
         }
+
+        // 2) No exact match: try a fuzzy match against words that are still fully
+        // 'active' (a word that already has partial credit can only be finished
+        // by typing it exactly - see above - so it doesn't collect credit twice).
+        // Skip if two candidates are equally close: an ambiguous match is worse
+        // than no match at all.
+        let best = null;
+        let bestDistance = Infinity;
+        let ambiguous = false;
+        for (const w of room.words) {
+            if (w.status !== 'active') continue;
+            const maxDist = maxFuzzyDistance(w.word);
+            if (maxDist === 0) continue; // word too short to allow any typo leniency
+            const distance = getLevenshteinDistance(w.word.toLowerCase(), normalizedGuess);
+            if (distance > maxDist) continue;
+            if (distance < bestDistance) {
+                best = w;
+                bestDistance = distance;
+                ambiguous = false;
+            } else if (distance === bestDistance) {
+                ambiguous = true;
+            }
+        }
+
+        if (best && !ambiguous) {
+            best.status = 'partial';
+            best.partialPoints = Math.floor(best.originalPoints / 2);
+            best.points = best.partialPoints;
+            best.guessedBy = player.name;
+            awardPoints(best.partialPoints);
+
+            io.to(roomCode).emit('correctGuess', {
+                word: normalizedGuess,
+                isPartialMatch: true,
+                points: best.partialPoints,
+                basePoints: best.originalPoints
+            }, player);
+            broadcastRoundState();
+            return;
+        }
+
+        io.to(roomCode).emit('wrongGuess', guess, player);
     });
 
     // Ready / not-ready handler for players
