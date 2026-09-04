@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Taboo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="guesses.css">
+</head>
+<body>
+  <div class="header">
+    <h1><span class="full-title">Taboo by Arsh</span><span class="short-title">Taboo</span></h1>
+    <div class="header-controls">
+      <button type="button" id="settingsBtn" class="icon-btn">⚙️</button>
+      <button type="button" id="themeToggle" class="icon-btn">🌙</button>
+    </div>
+  </div>
+
+  <!-- Review modal shown after each round -->
+  <div id="reviewModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:200; align-items:center; justify-content:center;">
+    <div style="background:var(--card-bg); color:var(--text-color); padding:20px; border-radius:12px; max-width:720px; width:90%; box-shadow:0 6px 30px rgba(0,0,0,0.4);">
+      <h2 id="reviewTitle">Round Review</h2>
+      <p id="reviewSubtitle" style="opacity:0.8;">Review the words and guesses from the round.</p>
+      <div id="reviewWords" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; max-height:300px; overflow:auto;"></div>
+      <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end;">
+        <button id="closeReviewBtn" style="background:#888;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game over modal showing final scores -->
+  <div id="gameOverModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:300; align-items:center; justify-content:center;">
+    <div style="background:var(--card-bg); color:var(--text-color); padding:24px; border-radius:12px; max-width:800px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+      <h2 id="gameOverTitle" style="font-size:28px; margin-bottom:12px;">Game Over!</h2>
+      <div id="winnerAnnouncement" style="font-size:24px; margin-bottom:24px; padding:12px; border-radius:8px;"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+        <div class="team-scores">
+          <h3 style="color:#ff4444; margin-bottom:12px;">Red Team</h3>
+          <div id="redTeamFinalScores"></div>
+        </div>
+        <div class="team-scores">
+          <h3 style="color:#4444ff; margin-bottom:12px;">Blue Team</h3>
+          <div id="blueTeamFinalScores"></div>
+        </div>
+      </div>
+      <div style="margin-top:24px; text-align:center;">
+        <button onclick="window.location.reload()" style="font-size:18px; padding:12px 24px;">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div class="left-column">
+      <!-- Current Turn Display -->
+      <div id="turnDisplay" class="turn-display">
+        <span class="turn-text"></span>
+        <span class="turn-round"></span>
+      </div>
+
+      <!-- Round Timer Display -->
+      <div id="roundTimer" class="round-timer">
+        Time Remaining: <span id="timeLeft"></span>
+      </div>
+
+      <!-- Teams Display -->
+      <!-- teams moved to middle column -->
+
+      <!-- Combined game area (words for describer, guessing for guessers) -->
+      <div class="game-area">
+        <!-- Word list for describer only -->
+        <div class="describer-area">
+          <div class="words-section">
+            <h4>Words to Describe</h4>
+            <ul id="wordsList"></ul>
+          </div>
+        </div>
+
+        <!-- Guessing area (input and history) -->
+        <div class="guessing-area">
+          <!-- Guess input for guessers -->
+          <div id="guessingControls">
+            <div class="guess-input-group">
+              <input type="text" 
+                     id="guessInput" 
+                     placeholder="Type your guess" 
+                     autocomplete="off" 
+                     autocapitalize="off">
+              <button type="button" 
+                      id="guessBtn" 
+                      data-action="guess">Guess</button>
+            </div>
+          </div>
+
+          <!-- Team guesses history -->
+          <div class="guesses-section">
+            <h4>Team Guesses</h4>
+            <div id="teamGuesses"></div>
+            <!-- Observer-only word list (shows words for observers without affecting guesses) -->
+            <div id="observerWords"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Status -->
+      <div id="gameStatus" style="margin: 20px;">
+        <div id="currentRole" style="font-weight: bold; margin-bottom: 10px;"></div>
+      </div>
+    </div>
+
+    <div class="middle-column">
+      <!-- Teams Display (moved) -->
+      <div class="teams-display">
+        <!-- Team Score Summary -->
+        <div class="team-scores-summary">
+          <div class="team-total red">
+            <div class="team-score" id="redTotalScore">0</div>
+            <div class="team-label">Red Team</div>
+          </div>
+          <div class="team-total blue">
+            <div class="team-score" id="blueTotalScore">0</div>
+            <div class="team-label">Blue Team</div>
+          </div>
+        </div>
+
+        <!-- Team Lists (stacked vertically) -->
+        <div class="team-list-column">
+          <div class="team compact red">
+            <h4>Red Team</h4>
+            <ul id="redTeamList" class="team-list compact-list"></ul>
+          </div>
+          <div class="team compact blue">
+            <h4>Blue Team</h4>
+            <ul id="blueTeamList" class="team-list compact-list"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-column">
+      <!-- Settings Panel (initially hidden) -->
+      <div id="settingsPanel" class="settings-panel" style="display: none;">
+        <h3>Game Settings</h3>
+        <div class="settings-group">
+          <label>Round Duration (seconds):</label>
+          <input type="number" id="roundDuration" value="60" min="30" max="300">
+        </div>
+        <div class="settings-group">
+          <label>Rounds per team:</label>
+          <input type="number" id="roundsPerTeam" value="1" min="1" max="10">
+          <small style="display:block; opacity:0.8; margin-top:6px;">Each team will play this many rounds (total rounds = rounds per team × 2)</small>
+        </div>
+        <div class="settings-group">
+          <label>Starting Words:</label>
+          <input type="number" id="startingWords" value="9" min="1" max="15">
+        </div>
+        <div class="settings-group">
+          <label>New Word Every (seconds):</label>
+          <input type="number" id="wordRevealInterval" value="15" min="5" max="60">
+        </div>
+        <button id="saveSettings" class="save-btn">Save Settings</button>
+      </div>
+
+      <!-- Room controls -->
+      <div class="room-controls">
+        <button id="createRoomBtn">Create Room</button>
+        <div id="roomCodeContainer"></div>
+        <div class="join-section">
+          <input id="roomCodeInput" placeholder="Room Code">
+          <input id="nameInput" placeholder="Your Name">
+          <div class="team-selection">
+            <label>Join a Team:</label>
+            <div class="join-options">
+              <div class="team-option red">
+                <h4>Red Team</h4>
+                <div class="role-buttons">
+                  <button id="redDescriber" class="role-btn describer">Join as Describer</button>
+                  <button id="redGuesser" class="role-btn guesser">Join as Guesser</button>
+                </div>
+              </div>
+              <div class="team-option blue">
+                <h4>Blue Team</h4>
+                <div class="role-buttons">
+                  <button id="blueDescriber" class="role-btn describer">Join as Describer</button>
+                  <button id="blueGuesser" class="role-btn guesser">Join as Guesser</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="roleControls" class="role-controls" style="display: none;">
+            <button id="switchRole" class="switch-btn">Switch Role</button>
+            <button id="readyBtnRole">Ready</button>
+            <div id="currentRoleDisplay" class="current-role"></div>
+          </div>
+        </div>
+        <div class="timer-controls">
+          <button id="startRoundBtn">Start Round</button>
+        </div>
+      </div>
+
+      <!-- scoreboard removed (now shown in teams column) -->
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // Handle game over event
+    socket.on('gameOver', ({ winner, redTeam, blueTeam }) => {
+      const gameOverModal = document.getElementById('gameOverModal');
+      const winnerAnnouncement = document.getElementById('winnerAnnouncement');
+      const redTeamScores = document.getElementById('redTeamFinalScores');
+      const blueTeamScores = document.getElementById('blueTeamFinalScores');
+
+      // Set winner announcement
+      const redScore = redTeam.score;
+      const blueScore = blueTeam.score;
+      if (winner === 'tie') {
+        winnerAnnouncement.innerHTML = `It's a tie! Both teams scored ${redScore} points!`;
+        winnerAnnouncement.style.background = '#555';
+      } else {
+        const winningTeam = winner === 'red' ? 'Red' : 'Blue';
+        const winningScore = winner === 'red' ? redScore : blueScore;
+        const losingScore = winner === 'red' ? blueScore : redScore;
+        winnerAnnouncement.innerHTML = `${winningTeam} Team Wins! ${winningScore} - ${losingScore}`;
+        winnerAnnouncement.style.background = winner === 'red' ? 'rgba(255,0,0,0.1)' : 'rgba(0,0,255,0.1)';
+      }
+
+      // Display player scores for each team
+      const createPlayerScoreHTML = player => {
+        return `<div style="margin:8px 0; padding:8px; border-radius:4px; background:rgba(255,255,255,0.05);">
+                  <span style="font-weight:bold;">${player.name}</span>: ${player.score} points
+                </div>`;
+      };
+
+      redTeamScores.innerHTML = redTeam.players.map(createPlayerScoreHTML).join('') ||
+                               '<div style="opacity:0.7">No players</div>';
+      blueTeamScores.innerHTML = blueTeam.players.map(createPlayerScoreHTML).join('') ||
+                                '<div style="opacity:0.7">No players</div>';
+
+      // Show the modal
+      gameOverModal.style.display = 'flex';
+    });
+
+    // DOM elements
+    const createBtn = document.getElementById("createRoomBtn");
+    const joinBtn = document.getElementById("joinRoomBtn");
+    const startBtn = document.getElementById("startRoundBtn");
+    const guessBtn = document.getElementById("guessBtn");
+    const wordsList = document.getElementById("wordsList");
+    
+    
+    // Theme toggle
+    const themeToggle = document.getElementById("themeToggle");
+    let isDarkMode = localStorage.getItem('theme') === 'dark';
+    
+    // Initialize theme
+    if (isDarkMode) {
+        document.body.setAttribute('data-theme', 'dark');
+        themeToggle.textContent = '☀️';
+    }
+    
+    // Theme toggle handler
+    themeToggle.onclick = () => {
+        isDarkMode = !isDarkMode;
+        document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+        themeToggle.textContent = isDarkMode ? '☀️' : '🌙';
+        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    };
+    
+    // Settings elements
+    const settingsBtn = document.getElementById("settingsBtn");
+    const settingsPanel = document.getElementById("settingsPanel");
+    const saveSettingsBtn = document.getElementById("saveSettings");
+    
+    // Game settings with defaults
+    const gameSettings = {
+      roundDuration: 60,
+      roundsPerTeam: 1,
+      startingWords: 3,
+      wordRevealInterval: 15
+    };
+    
+    // Settings panel toggle
+    settingsBtn.onclick = () => {
+      const isVisible = settingsPanel.style.display === "block";
+      settingsPanel.style.display = isVisible ? "none" : "block";
+      settingsBtn.textContent = isVisible ? "⚙️" : "✕";
+    };
+    
+    // Save settings
+    saveSettingsBtn.onclick = () => {
+      const newSettings = {
+        roundDuration: parseInt(document.getElementById("roundDuration").value, 10),
+        roundsPerTeam: parseInt(document.getElementById("roundsPerTeam").value, 10),
+        startingWords: parseInt(document.getElementById("startingWords").value, 10),
+        wordRevealInterval: parseInt(document.getElementById("wordRevealInterval").value, 10)
+      };
+      
+      // Validate settings
+      if (newSettings.roundDuration < 30 || newSettings.roundDuration > 300) {
+        alert("Round duration must be between 30 and 300 seconds");
+        return;
+      }
+      if (newSettings.roundsPerTeam < 1 || newSettings.roundsPerTeam > 10) {
+        alert("Rounds per team must be between 1 and 10");
+        return;
+      }
+      if (newSettings.startingWords < 1 || newSettings.startingWords > 10) {
+        alert("Starting words must be between 1 and 10");
+        return;
+      }
+      if (newSettings.wordRevealInterval < 5 || newSettings.wordRevealInterval > 60) {
+        alert("Word reveal interval must be between 5 and 60 seconds");
+        return;
+      }
+      
+      // Update settings and notify server
+      Object.assign(gameSettings, newSettings);
+      const room = document.getElementById("roomCodeInput").value;
+      socket.emit("updateGameSettings", room, gameSettings);
+      
+      try {
+        // Make sure we have references to both elements
+        const settingsPanel = document.getElementById("settingsPanel");
+        const settingsBtn = document.getElementById("settingsBtn");
+        
+        if (settingsPanel) {
+          settingsPanel.style.display = "none";
+        }
+        if (settingsBtn) {
+          settingsBtn.textContent = "⚙️";
+        }
+        
+        // Try to update timer input if it exists
+        const timerInput = document.getElementById("timerInput");
+        if (timerInput) {
+          timerInput.value = gameSettings.roundDuration;
+        }
+      } catch (error) {
+        console.error("Error updating UI after saving settings:", error);
+      }
+    };
+
+    // Button actions
+    createBtn.onclick = () => socket.emit("createRoom");
+    
+    let selectedTeam = null;
+    let currentRole = null;
+
+    // Team and role join buttons
+    document.getElementById("redDescriber").onclick = () => joinWithTeamAndRole('red', 'describer');
+    document.getElementById("redGuesser").onclick = () => joinWithTeamAndRole('red', 'guesser');
+    document.getElementById("blueDescriber").onclick = () => joinWithTeamAndRole('blue', 'describer');
+    document.getElementById("blueGuesser").onclick = () => joinWithTeamAndRole('blue', 'guesser');
+
+    // Function to join with team and role
+    function joinWithTeamAndRole(team, role) {
+      const room = document.getElementById("roomCodeInput").value;
+      const name = document.getElementById("nameInput").value;
+      if (room && name) {
+        const token = localStorage.getItem('playerToken') || null;
+        socket.emit("joinRoom", room, name, team, role, token);
+        selectedTeam = team;
+        currentRole = role;
+        updateRoleDisplay();
+        // Persist join details so a refresh can re-join automatically
+        try {
+          localStorage.setItem('lastRoom', room);
+          localStorage.setItem('lastName', name);
+          localStorage.setItem('lastTeam', team);
+          localStorage.setItem('lastRole', role);
+        } catch (e) {}
+      } else {
+        alert("Please enter room code and name");
+      }
+    }
+
+    // Function to update describer button states
+    function updateDescriberButtons(describers) {
+      const redDescriberBtn = document.getElementById("redDescriber");
+      const blueDescriberBtn = document.getElementById("blueDescriber");
+      
+      if (redDescriberBtn && blueDescriberBtn) {
+        redDescriberBtn.disabled = describers && describers.red && describers.red !== mySocketId;
+        blueDescriberBtn.disabled = describers && describers.blue && describers.blue !== mySocketId;
+        
+        // Update tooltips
+        redDescriberBtn.title = redDescriberBtn.disabled ? "Describer role already taken" : "Join as Red Team Describer";
+        blueDescriberBtn.title = blueDescriberBtn.disabled ? "Describer role already taken" : "Join as Blue Team Describer";
+      }
+    }
+
+    function joinWithRole(role) {
+      const room = document.getElementById("roomCodeInput").value;
+      const name = document.getElementById("nameInput").value;
+      if (room && name && selectedTeam) {
+        const token = localStorage.getItem('playerToken') || null;
+        socket.emit("joinRoom", room, name, selectedTeam, role, token);
+        currentRole = role;
+        updateRoleDisplay();
+        try {
+          localStorage.setItem('lastRoom', room);
+          localStorage.setItem('lastName', name);
+          localStorage.setItem('lastTeam', selectedTeam);
+          localStorage.setItem('lastRole', role);
+        } catch (e) {}
+      } else {
+        alert("Please enter room code, name, and select a team");
+      }
+    }
+
+    // Switch role button
+    document.getElementById("switchRole").onclick = () => {
+      const room = document.getElementById("roomCodeInput").value;
+      socket.emit("switchRole", room);
+    };
+
+    function updateRoleDisplay() {
+      const roleControls = document.getElementById("roleControls");
+      const currentRoleDisplay = document.getElementById("currentRoleDisplay");
+      roleControls.style.display = "block";
+      currentRoleDisplay.textContent = `Current Role: ${currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}`;
+    }
+
+    startBtn.onclick = () => {
+      const room = document.getElementById("roomCodeInput").value;
+      socket.emit("startRound", room);
+    };
+    function submitGuess() {
+      const room = document.getElementById("roomCodeInput").value;
+      const guessInput = document.getElementById("guessInput");
+      const guess = guessInput.value.trim();
+      if (guess) {
+        console.log('Submitting guess:', { room, guess });
+        socket.emit("guess", room, guess);
+        guessInput.value = ""; // clear input
+      }
+    }
+
+    guessBtn.onclick = submitGuess;
+
+    // Allow pressing Enter to submit guess
+    document.getElementById("guessInput").addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        submitGuess();
+      }
+    });
+
+    // Store our own socket ID when we connect
+    let mySocketId = null;
+  let autoRejoinAttempts = 0;
+    socket.on('connect', () => {
+      mySocketId = socket.id;
+      console.log('Connected with socket ID:', mySocketId);
+      // Clean up any stale join state
+      try {
+        localStorage.removeItem('lastRoom');
+        localStorage.removeItem('lastName');
+        localStorage.removeItem('lastTeam');
+        localStorage.removeItem('lastRole');
+        localStorage.removeItem('playerToken');
+      } catch (e) { console.error('Auto-rejoin failed', e); }
+    });
+
+    // Review state flag
+    window.inReview = false;
+
+  // Ready state for this client
+  let myReady = false;
+  // Track per-team ready flags reported by server
+  const teamReady = { red: false, blue: false };
+
+    const readyBtn = document.getElementById('readyBtn');
+    const readyBtnRole = document.getElementById('readyBtnRole');
+    function toggleReady() {
+      const room = document.getElementById("roomCodeInput").value;
+      myReady = !myReady;
+      if (readyBtn) readyBtn.textContent = myReady ? 'Unready' : 'Ready';
+      if (readyBtnRole) readyBtnRole.textContent = myReady ? 'Unready' : 'Ready';
+      socket.emit('setReady', room, myReady);
+    }
+    if (readyBtn) readyBtn.onclick = toggleReady;
+    if (readyBtnRole) readyBtnRole.onclick = toggleReady;
+
+    socket.on('setAsGuesser', () => {
+      // Hide describer area and show guessing controls
+      document.querySelector('.describer-area').style.display = 'none';
+      document.getElementById('guessingControls').style.display = 'block';
+      document.getElementById('currentRole').textContent = 'You are a Guesser';
+      
+      // Show guessing area and clear word list
+      document.querySelector('.guessing-area').style.display = 'block';
+      wordsList.innerHTML = '';
+    });
+
+    // Socket listeners
+    socket.on("roomCreated", roomCode => {
+        // hide the create button
+        createBtn.style.display = 'none';
+
+        // clear previous content
+        const roomCodeContainer = document.getElementById('roomCodeContainer');
+        roomCodeContainer.innerHTML = '';
+
+        // create a new button with the room code
+        const codeButton = document.createElement('button');
+        codeButton.textContent = `Room Code: ${roomCode}`;
+        codeButton.style.cursor = 'pointer';
+
+        // copy to clipboard on click
+        codeButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(roomCode)
+                .then(() => {
+                    codeButton.textContent = 'Copied!';
+                    setTimeout(() => codeButton.textContent = `Room Code: ${roomCode}`, 1500);
+                })
+                .catch(err => console.error('Failed to copy:', err));
+        });
+
+        roomCodeContainer.appendChild(codeButton);
+        // pre-fill room input and persist so refresh can rejoin
+        try {
+          document.getElementById('roomCodeInput').value = roomCode;
+          localStorage.setItem('lastRoom', roomCode);
+        } catch (e) {}
+    });
+
+
+    socket.on("describerWords", words => {
+      // Clear and update word list for describer
+      wordsList.innerHTML = "";
+      words.forEach(w => {
+        const li = document.createElement("li");
+        const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
+        const pts = (w && typeof w === 'object' && w.points) ? w.points : null;
+        // store canonical lowercase for matching later
+        li.dataset.word = String(text).toLowerCase();
+        li.className = 'word-item';
+        li.innerHTML = `<div class="word-text">${text}</div>${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+        wordsList.appendChild(li);
+      });
+      
+      // Show describer area and hide guessing controls
+      document.querySelector('.describer-area').style.display = 'block';
+      document.getElementById('guessingControls').style.display = 'none';
+      document.getElementById('currentRole').textContent = 'You are the Describer';
+      
+      // Show guessing area and clear existing guesses
+      document.querySelector('.guessing-area').style.display = 'block';
+      // Only clear teamGuesses for actual describer (do not clear for observers)
+      // This handler is only invoked for real describers; observers receive 'observerWords'
+    });
+
+    // Observer-only: receive words (so observers can view words without the client
+    // switching to describer UI or clearing team guesses)
+    socket.on('observerWords', words => {
+      try {
+        const observerEl = document.getElementById('observerWords');
+        if (!observerEl) return;
+
+        // Pre-prepare the new content before updating DOM
+        const newContent = '<h4>Words (observing)</h4><div class="word-container">' + words.map(w => {
+          const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
+          const pts = (w && typeof w === 'object' && w.points) ? w.points : null;
+          return `<div class="word-item">${text}${pts ? `<div class="word-points">(+${pts})</div>` : ''}</div>`;
+        }).join('') + '</div>';
+        
+        // After preparing new content, ensure layout elements are correctly configured first
+        const guessingArea = document.querySelector('.guessing-area');
+        const guessingControls = document.getElementById('guessingControls');
+        const describerArea = document.querySelector('.describer-area');
+        if (guessingArea) guessingArea.style.display = 'block';
+        if (guessingControls) guessingControls.style.display = 'none';
+        if (describerArea) describerArea.style.display = 'none';
+
+        // Only update the DOM once everything is ready
+        requestAnimationFrame(() => {
+          observerEl.innerHTML = newContent;
+        });
+      } catch (err) {
+        console.error('Error updating observerWords:', err);
+      }
+    });
+
+    // Room-level observer words (reliable): include team whose words these are
+    socket.on('observerWordsRoom', payload => {
+      try {
+        // payload: { team, words }
+        if (!payload || !payload.words) return;
+        const observerEl = document.getElementById('observerWords');
+        if (!observerEl) return;
+
+        // If we know our team, only show these words when we're NOT on the playing team
+        if (window.myTeam && payload.team && window.myTeam === payload.team) {
+          // This is the playing team — don't show in observer area
+          observerEl.innerHTML = '';
+          return;
+        }
+
+        // Pre-prepare the new content matching team guesses style
+        const newContent = '<h4>Words (observing)</h4><div class="word-container">' + payload.words.map(w => {
+          const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
+          const classes = ['team-guess'];
+          let pointsText = '';
+
+          if (w.completed || w.isCorrect) {
+            classes.push('correct');
+            if (w.points) {
+              pointsText = `<span class="word-points">(+${w.points})</span>`;
+            }
+          } else if (w.isPartialMatch) {
+            classes.push('partial');
+            if (w.partialPoints) {
+              pointsText = `<span class="word-points">(+${w.partialPoints} of ${w.originalPoints || w.basePoints || w.partialPoints*2} (partial))</span>`;
+            }
+          }
+
+          return `<div class="${classes.join(' ')}">${text}${pointsText}${w.guessedBy ? ` by ${w.guessedBy}` : ''}</div>`;
+        }).join('') + '</div>';
+
+        // Use requestAnimationFrame to ensure smooth update
+        requestAnimationFrame(() => {
+          observerEl.innerHTML = newContent;
+        });
+      } catch (err) {
+        console.error('Error handling observerWordsRoom:', err);
+      }
+    });
+
+        // Describer-targeted observer-style update: same visual as team guesses
+    socket.on('describerObserverWords', payload => {
+      try {
+        if (!payload || !payload.words) return;
+        const observerEl = document.getElementById('observerWords');
+        if (!observerEl) return;
+
+        const newContent = '<h4>Words (observing)</h4><div class="word-container">' + payload.words.map(w => {
+          const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
+          const classes = ['team-guess'];
+          let pointsText = '';
+
+          if (w.completed || w.isCorrect) {
+            classes.push('correct');
+            if (w.points) {
+              pointsText = `<span class="word-points">(+${w.points})</span>`;
+            }
+          } else if (w.isPartialMatch) {
+            classes.push('partial');
+            if (w.partialPoints) {
+              pointsText = `<span class="word-points">(+${w.partialPoints} of ${w.originalPoints || w.basePoints || w.partialPoints*2} (partial))</span>`;
+            }
+          }
+
+          return `<div class="${classes.join(' ')}">${text}${pointsText}${w.guessedBy ? ` by ${w.guessedBy}` : ''}</div>`;
+        }).join('') + '</div>';        // Update DOM smoothly
+        requestAnimationFrame(() => {
+          observerEl.innerHTML = newContent;
+        });
+
+        // Also update the describer's own words list to show green/partial styling inline
+        try {
+          if (wordsList) {
+            payload.words.forEach(w => {
+              const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
+              const lower = String(text).toLowerCase();
+              // find matching li in wordsList by data-word
+              const li = Array.from(wordsList.children).find(el => el.dataset && el.dataset.word === lower);
+              if (li) {
+                // Handle word state updates
+                const isComplete = w && typeof w === 'object' && (w.completed || w.isCorrect);
+                const isPartial = w && typeof w === 'object' && (w.isPartialMatch || w.partialPoints) && !isComplete;
+                
+                // Clear previous state
+                li.classList.remove('correct-word', 'partial-word');
+                
+                // Set new state
+                if (isComplete) {
+                  li.classList.add('correct-word');
+                  let info = '';
+                  if (w.guessedBy) info += `<div class="guessed-by">${w.guessedBy}</div>`;
+                  if (w.points) info += `<div class="word-points">(+${w.points})</div>`;
+                  if (info) {
+                    const existing = li.querySelector('.describer-extra');
+                    if (existing) existing.innerHTML = info;
+                    else {
+                      const div = document.createElement('div');
+                      div.className = 'describer-extra';
+                      div.innerHTML = info;
+                      li.appendChild(div);
+                    }
+                  }
+                } else if (isPartial) {
+                  li.classList.add('partial-word');
+                  let info = '';
+                  if (w.partialPoints) info += `<div class="word-points">(+${w.partialPoints})</div>`;
+                  if (info) {
+                    const existing = li.querySelector('.describer-extra');
+                    if (existing) existing.innerHTML = info;
+                    else {
+                      const div = document.createElement('div');
+                      div.className = 'describer-extra';
+                      div.innerHTML = info;
+                      li.appendChild(div);
+                    }
+                  }
+                } else {
+                  // Remove any extra info if returning to normal state
+                  const existing = li.querySelector('.describer-extra');
+                  if (existing) existing.remove();
+                }
+              }
+            });
+          }
+        } catch (updateErr) {
+          console.error('Failed to update describer word list from describerObserverWords:', updateErr);
+        }
+      } catch (err) {
+        console.error('Error handling describerObserverWords:', err);
+      }
+    });
+
+    function addTeamGuess(guess, player, isCorrect, points, isPartial, isCompletingPartial) {
+      console.log('Adding team guess:', { guess, player, isCorrect, points, isPartial, isCompletingPartial });
+      
+      // Normalize the guess to a string first
+      let displayGuess = '';
+      if (typeof guess === 'string') {
+        displayGuess = guess;
+      } else if (typeof guess === 'object') {
+        displayGuess = guess.word || guess.toString();
+        // Prevent [object Object] from showing
+        if (displayGuess === '[object Object]') {
+          console.error('Invalid guess format:', guess);
+          return;
+        }
+      } else {
+        displayGuess = String(guess);
+      }
+      
+      // Get the teamGuesses container
+      const teamGuesses = document.getElementById("teamGuesses");
+      if (!teamGuesses) return;
+
+      // Normalize guess text for consistent keys (handles strings and objects)
+      function normalizeGuessText(g) {
+        if (typeof g === 'object' && g.word) return String(g.word).trim().toLowerCase();
+        const text = (typeof g === 'string') ? g : (g && g.guess) ? g.guess : String(g);
+        return String(text).trim().toLowerCase();
+      }
+
+      // Use our normalized display text
+      const displayWord = displayGuess;
+
+      // Generate a unique key for this guess - use displayGuess to ensure consistency
+      const key = `${player.id}:${displayGuess.trim().toLowerCase()}`;
+      
+      // Check if this guess already exists
+      const existing = teamGuesses.querySelector(`[data-guess-key="${key}"]`);
+      
+        // If this guess is already present and marked permanent, don't allow a later
+        // 'wrong' notification to overwrite it. This prevents the flash-to-orange
+        // (partial) followed by red (wrong) when events arrive out-of-order.
+        if (existing && existing.dataset && existing.dataset.permanent === 'true' && !isCorrect) {
+          console.log('Ignoring non-correct update for permanent guess:', key);
+          return;
+        }
+
+        if (existing) {
+        // Update existing guess - order matters for CSS specificity
+        existing.classList.remove('live-guess', 'correct', 'wrong', 'partial');
+        existing.className = 'team-guess';
+        if (isPartial) {
+          existing.classList.add('partial');
+        } else if (isCompletingPartial) {
+          existing.classList.add('correct');
+        } else if (isCorrect) {
+          existing.classList.add('correct');
+        } else {
+          existing.classList.add('wrong');
+        }
+        
+        let pointsText = '';
+        if (points) {
+          if (isPartial) {
+            pointsText = `<span class="word-points">(+${points} of ${guess.basePoints || points*2} (partial))</span>`;
+          } else if (isCompletingPartial) {
+            pointsText = `<span class="word-points">(+${points}, completing ${guess.partialPoints || '?'} ➜ ${guess.basePoints || (points + (guess.partialPoints || 0))})</span>`;
+          } else {
+            pointsText = `<span class="word-points">(+${points})</span>`;
+          }
+        }
+
+        existing.innerHTML = `${player.name}: ${displayWord}${pointsText}`;
+        existing.dataset.permanent = 'true';
+        existing.dataset.isPartial = isPartial;
+        existing.style.opacity = '';
+        
+        if (existing.dataset && existing.dataset.fadeTimerId) {
+          const tid = parseInt(existing.dataset.fadeTimerId, 10);
+          if (!isNaN(tid)) clearTimeout(tid);
+          delete existing.dataset.fadeTimerId;
+        }
+        
+        existing.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      } else {
+        // Create new guess element
+        const guessElement = document.createElement("div");
+        
+        // Set appropriate class - order matters for CSS specificity
+        guessElement.className = 'team-guess';
+        if (isPartial) {
+          guessElement.classList.add('partial');
+        } else if (isCompletingPartial) {
+          guessElement.classList.add('correct');
+        } else if (isCorrect) {
+          guessElement.classList.add('correct');
+        } else {
+          guessElement.classList.add('wrong');
+        }
+
+        let pointsText = '';
+        if (points) {
+          if (isPartial) {
+            pointsText = `<span class="word-points">(+${points} of ${guess.basePoints || points*2} (partial))</span>`;
+          } else if (isCompletingPartial) {
+            pointsText = `<span class="word-points">(+${points}, completing ${guess.partialPoints || '?'} ➜ ${guess.basePoints || (points + (guess.partialPoints || 0))})</span>`;
+          } else {
+            pointsText = `<span class="word-points">(+${points})</span>`;
+          }
+        }
+
+        guessElement.innerHTML = `${player.name}: ${displayWord}${pointsText}`;
+        guessElement.dataset.guessKey = key;
+        guessElement.dataset.permanent = 'true';
+        guessElement.dataset.isPartial = isPartial;
+        guessElement.style.opacity = '';
+        
+        teamGuesses.appendChild(guessElement);
+        guessElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }
+
+    // Listen for guesses from other players
+    socket.on('announceGuess', (guess, player) => {
+      try {
+        console.log('Live guess announced:', { guess, player });
+        // Don't show live guess for completing a partial match
+        if (typeof guess === 'object' && guess.isCompletingPartial) {
+          return;
+        }
+        // Normalize the guess to string for live display
+        const guessText = typeof guess === 'object' ? (guess.word || guess.toString()) : guess;
+        addTeamGuess(guessText, player, false);
+      } catch (err) {
+        console.error('Error handling announceGuess:', err);
+      }
+    });
+
+    socket.on("correctGuess", (guess, player) => {
+      try {
+          console.log('Received correctGuess:', { guess, player });
+          const isPartial = guess.isPartialMatch;
+          const isCompletingPartial = guess.isCompletingPartial;
+          
+          // Ensure the guessing UI stays visible for the current team's guessers
+          const currentTurn = window.lastGameState && window.lastGameState.currentTurn;
+          const myTeam = window.lastGameState && window.lastGameState.players?.find(p => p.id === mySocketId)?.team;
+          if (currentTurn === myTeam && currentRole === 'guesser') {
+            document.getElementById('guessingControls').style.display = 'block';
+          }
+          
+          console.log('Processing guess:', {
+              guess,
+              isPartial,
+              isCompletingPartial,
+              points: guess.points,
+              basePoints: guess.basePoints,
+              partialPoints: guess.partialPoints
+          });
+          
+          // Determine pointsToUse (server should provide guess.points; if not compute remaining)
+          let pointsToUse = null;
+          if (guess && typeof guess.points === 'number') {
+            pointsToUse = guess.points;
+          } else if (guess && typeof guess.basePoints === 'number' && typeof guess.partialPoints === 'number') {
+            pointsToUse = guess.basePoints - guess.partialPoints;
+            console.log('Computed remaining points client-side:', { basePoints: guess.basePoints, partialPoints: guess.partialPoints, remaining: pointsToUse });
+          }
+          if (pointsToUse === null) pointsToUse = 0;
+
+          // If this is a partial match or completing a partial match, ensure we have the right points
+          if (isPartial) {
+              console.log('Handling as partial match');
+              // For new partial matches, show the partial of total
+              addTeamGuess(guess, player, true, pointsToUse, true, false);
+          } else if (isCompletingPartial) {
+              console.log('Handling as completing partial match');
+              // For completing a partial, show completion points
+              addTeamGuess(guess, player, true, pointsToUse, false, true);
+              // Immediately update team and player scores in the DOM so the remaining
+              // points are reflected without waiting for a full gameState update.
+              try {
+                if (player && player.team && typeof pointsToUse === 'number') {
+                  const teamEl = document.getElementById(player.team + 'TotalScore');
+                  const beforeTeam = teamEl ? (parseInt(teamEl.textContent, 10) || 0) : null;
+                  console.log('Completing partial - team score before update:', { team: player.team, beforeTeam });
+                  if (teamEl) {
+                    const cur = beforeTeam || 0;
+                    teamEl.textContent = cur + pointsToUse;
+                    console.log('Completing partial - team score after update:', { team: player.team, afterTeam: parseInt(teamEl.textContent, 10) });
+                  }
+
+                  // Update player entry score if present in the team list
+                  const teamList = document.getElementById(player.team + 'TeamList');
+                  if (teamList) {
+                    const items = Array.from(teamList.querySelectorAll('li'));
+                    const li = items.find(el => el.textContent && el.textContent.includes(player.name));
+                    if (li) {
+                      const ptsEl = li.querySelector('.word-points');
+                      if (ptsEl) {
+                        const m = ptsEl.textContent.match(/\d+/);
+                        const oldPts = m ? parseInt(m[0], 10) : 0;
+                        ptsEl.textContent = `pts: ${oldPts + pointsToUse}`;
+                        console.log('Updated player pts in list:', { player: player.name, oldPts, added: pointsToUse, newPts: oldPts + pointsToUse });
+                      } else {
+                        const div = document.createElement('div');
+                        div.className = 'word-points';
+                        div.textContent = `pts: ${pointsToUse}`;
+                        li.appendChild(div);
+                        console.log('Added player pts element for', player.name, 'pts:', pointsToUse);
+                      }
+                    } else {
+                      console.log('Player list item not found for', player.name);
+                    }
+                  } else {
+                    console.log('Team list element not found:', player.team + 'TeamList');
+                  }
+                } else {
+                  console.log('Completing partial missing player/team or pointsToUse', player, pointsToUse);
+                }
+              } catch (e) { console.error('Failed to update DOM scores for completing partial:', e); }
+          } else {
+              console.log('Handling as regular correct guess');
+              // Regular correct guess
+              addTeamGuess(guess, player, true, pointsToUse, false, false);
+      }
+    } catch (err) {
+          console.error('Error handling correctGuess:', err);
+      }
+    });
+
+    socket.on("wrongGuess", (guess, player) => {
+      console.log('Wrong guess event received:', { guess, player });
+      // Add to team guesses
+      addTeamGuess(guess, player, false);
+    });
+    
+    // Announced live guess (show for other players). Creates a live entry which will be
+    // converted to permanent when server emits correctGuess/wrongGuess.
+    socket.on('announceGuess', (guess, player) => {
+      try {
+        console.log('Live guess announced:', { guess, player });
+        const teamGuesses = document.getElementById('teamGuesses');
+        if (!teamGuesses) return;
+
+        // Extract word from guess, handling various formats
+        let guessWord;
+        if (typeof guess === 'string') {
+          guessWord = guess;
+        } else if (typeof guess === 'object') {
+          if (guess.word) {
+            guessWord = guess.word;
+          } else if (guess.toString && guess.toString() !== '[object Object]') {
+            guessWord = guess.toString();
+          } else {
+            console.error('Invalid guess format:', guess);
+            return;
+          }
+        } else {
+          guessWord = String(guess);
+        }
+
+        // Use same normalization as addTeamGuess so finalization finds live element reliably
+        const key = `${player.id}:${guessWord.trim().toLowerCase()}`;
+        // Avoid creating duplicate live entries if one already exists
+        let existing = teamGuesses.querySelector(`[data-guess-key="${key}"]`);
+        if (existing) return;
+        const guessElement = document.createElement('div');
+        guessElement.className = 'team-guess live-guess';
+        guessElement.textContent = `${player.name}: ${guessWord}`;
+        guessElement.dataset.guessKey = key;
+        // Ensure live guesses start fully opaque (avoid inherited faded state)
+        guessElement.style.opacity = '1';
+        // Defensive: store fade-timer id placeholder so any stale timer can be cleared later
+        guessElement.dataset.fadeTimerId = '';
+        teamGuesses.appendChild(guessElement);
+        // Auto-scroll to latest
+        guessElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      } catch (err) {
+        console.error('Error handling announceGuess:', err);
+      }
+    });
+
+    function updateTeamsDisplay(gameState) {
+      const players = gameState.players || gameState; // Handle both new and old format
+      console.log('Updating teams display with game state:', gameState);
+      
+      if (!Array.isArray(players)) {
+        console.error('Invalid players data received:', players);
+        return;
+      }
+      
+      // Clear both team lists
+      document.getElementById('redTeamList').innerHTML = '';
+      document.getElementById('blueTeamList').innerHTML = '';
+      
+      // Determine describers and current turn
+      const describers = (gameState && gameState.describers) ? gameState.describers : { red: null, blue: null };
+      const currentTurn = gameState.currentTurn || (window.lastGameState && window.lastGameState.currentTurn) || 'red';
+
+      // Store last gameState for handlers
+      window.lastGameState = gameState;
+
+      // Store our team if available
+      let me;
+      try {
+        me = (gameState.players || []).find(p => p.id === mySocketId);
+        if (me) window.myTeam = me.team;
+        // Keep local ready flag in sync with server
+        if (me) {
+          myReady = !!me.ready;
+          // Update Ready button text(s)
+          if (readyBtnRole) readyBtnRole.textContent = myReady ? 'Unready' : 'Ready';
+          if (readyBtn) readyBtn.textContent = myReady ? 'Unready' : 'Ready';
+          currentRole = me.role || currentRole;
+          // Ensure displayed role controls reflect server state
+          try { updateRoleDisplay(); } catch (e) {}
+        }
+      } catch (err) {
+        // ignore
+      }
+
+      // If we're currently the active describer and a round is in progress, prevent switching
+      const roundActive = !!gameState.roundActive;
+      const amIDescriber = (gameState.players || []).find(p => p.id === mySocketId && p.role === 'describer' && p.team === currentTurn);
+      if (amIDescriber && roundActive) {
+        // disable join/switch controls so the describer can't change mid-round
+        ['redDescriber','redGuesser','blueDescriber','blueGuesser','switchRole'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = true;
+        });
+      } else {
+        // otherwise enable the join buttons (but keep describer join disabled if already taken)
+        ['redDescriber','redGuesser','blueDescriber','blueGuesser','switchRole'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = false;
+        });
+      }
+      // Re-apply describer availability (don't enable describer join if it's already taken)
+      try { updateDescriberButtons(describers); } catch (e) { }
+
+      // If this client switched mid-round, prevent switching back to the previous team
+      try {
+        if (me && me.switchedFrom && roundActive) {
+          const forbid = me.switchedFrom;
+          if (forbid === 'red') {
+            const el1 = document.getElementById('redDescriber');
+            const el2 = document.getElementById('redGuesser');
+            if (el1) el1.disabled = true;
+            if (el2) el2.disabled = true;
+          } else if (forbid === 'blue') {
+            const el1 = document.getElementById('blueDescriber');
+            const el2 = document.getElementById('blueGuesser');
+            if (el1) el1.disabled = true;
+            if (el2) el2.disabled = true;
+          }
+        }
+      } catch (e) { }
+
+      // Ensure the client's view (describer / guesser / observer) matches the authoritative server state
+      try {
+        const describerArea = document.querySelector('.describer-area');
+        const guessingControls = document.getElementById('guessingControls');
+        const observerEl = document.getElementById('observerWords');
+        if (me) {
+          if (me.role === 'describer') {
+            if (describerArea) describerArea.style.display = 'block';
+            if (guessingControls) guessingControls.style.display = 'none';
+            if (observerEl) observerEl.innerHTML = '';
+            document.getElementById('currentRole').textContent = 'You are the Describer';
+          } else if (roundActive && me.team === currentTurn) {
+            // Guesser on the playing team
+            if (describerArea) describerArea.style.display = 'none';
+            if (guessingControls) guessingControls.style.display = 'block';
+            if (observerEl) observerEl.innerHTML = '';
+            document.getElementById('currentRole').textContent = 'You are a Guesser';
+          } else {
+            // Observer or non-playing team member
+            if (describerArea) describerArea.style.display = 'none';
+            if (guessingControls) guessingControls.style.display = 'none';
+            // observerWords will be filled by observerWords/observerWordsRoom events; keep element visible
+            document.getElementById('currentRole').textContent = 'Observer';
+          }
+        }
+      } catch (e) { console.error('Failed to apply client view sync:', e); }
+
+      // Enable start button only for the current team's describer. If we're in review,
+      // allow the describer to start regardless of ready state.
+      if (startBtn) {
+        let canStart = false;
+        if (mySocketId && describers[currentTurn] && mySocketId === describers[currentTurn]) {
+          if (window.inReview) canStart = true;
+          else canStart = !!teamReady[currentTurn];
+        }
+        startBtn.disabled = !canStart;
+      }
+
+      // Update describer button states based on current game state
+      updateDescriberButtons(describers);
+
+      // Group players by team
+      const redTeam = players.filter(p => p.team === 'red');
+      const blueTeam = players.filter(p => p.team === 'blue');
+      
+      // Update red team list
+      redTeam.forEach(player => {
+        const li = document.createElement('li');
+        const readyMark = player.ready ? ' ✅' : '';
+        const describerLabel = player.id === describers.red ? ' (Describer)' : '';
+        li.innerHTML = `${player.name}${describerLabel}${readyMark}${player.score ? `<div class="word-points">pts: ${player.score}</div>` : ''}`;
+        if (player.id === mySocketId) {
+          li.style.fontWeight = 'bold';
+        }
+        // Mark describer visually
+        if (player.id === describers.red) {
+          li.style.textDecoration = 'underline';
+        }
+        document.getElementById('redTeamList').appendChild(li);
+      });
+      
+      // Update blue team list
+      blueTeam.forEach(player => {
+        const li = document.createElement('li');
+        const readyMark = player.ready ? ' ✅' : '';
+        const describerLabel = player.id === describers.blue ? ' (Describer)' : '';
+        li.innerHTML = `${player.name}${describerLabel}${readyMark}${player.score ? `<div class="word-points">pts: ${player.score}</div>` : ''}`;
+        if (player.id === mySocketId) {
+          li.style.fontWeight = 'bold';
+        }
+        if (player.id === describers.blue) {
+          li.style.textDecoration = 'underline';
+        }
+        document.getElementById('blueTeamList').appendChild(li);
+      });
+      
+      // Update team total scores
+      const redScore = gameState.teams ? gameState.teams.red.score : 
+          redTeam.reduce((sum, p) => sum + (p.score || 0), 0);
+      const blueScore = gameState.teams ? gameState.teams.blue.score :
+          blueTeam.reduce((sum, p) => sum + (p.score || 0), 0);
+      
+      document.getElementById('redTotalScore').textContent = redScore;
+      document.getElementById('blueTotalScore').textContent = blueScore;
+    }
+
+    socket.on("playerList", gameState => {
+      console.log('Received playerList event:', gameState);
+      updateTeamsDisplay(gameState);
+    });
+
+      socket.on('joinSuccess', () => {
+        console.log('Join successful');
+      });
+
+      // Join failure with structured payload
+      socket.on('joinFailed', payload => {
+        try {
+          const msg = (payload && payload.reason) ? payload.reason : 'Join failed';
+          alert(msg);
+        } catch (e) { alert('Join failed'); }
+      });
+
+    socket.on('updateGameState', gameState => {
+      console.log('Received updateGameState event:', gameState);
+      updateTeamsDisplay(gameState);
+      
+      // Update turn display
+      const turnDisplay = document.getElementById('turnDisplay');
+      const turnText = document.querySelector('.turn-text');
+      const turnRound = document.querySelector('.turn-round');
+      
+      if (gameState.currentTurn) {
+        const oldClass = turnDisplay.className;
+        turnDisplay.className = 'turn-display visible ' + gameState.currentTurn + '-turn';
+        turnText.textContent = gameState.currentTurn.toUpperCase() + ' TEAM\'S TURN';
+        
+        // Add round number
+          if (gameState.currentRound !== undefined) {
+            // Calculate total rounds based on latest settings (either from gameState or local settings)
+            const settingsToUse = gameState.settings || window.lastSettings || { roundsPerTeam: 1 };
+            const totalRounds = settingsToUse.roundsPerTeam * 2;
+            turnRound.textContent = 'ROUND ' + (gameState.currentRound || 1) + ' OF ' + totalRounds;
+          }
+        
+        // Add animation class if turn changed
+        if (oldClass.includes('visible') && !oldClass.includes(gameState.currentTurn)) {
+          turnDisplay.classList.add('animate');
+          setTimeout(() => {
+            turnDisplay.classList.remove('animate');
+          }, 500);
+        }
+        
+        // Set CSS variable for team-specific shadow color
+        turnDisplay.style.setProperty('--team-shadow', 
+          gameState.currentTurn === 'red' ? '255, 68, 68' : '68, 68, 255'
+        );
+        turnDisplay.style.animation = 'pulse 2s infinite';
+      } else {
+        turnDisplay.className = 'turn-display';
+        turnDisplay.style.animation = 'none';
+      }
+    });
+
+    // Round timer handlers
+    socket.on('roundStarted', (duration) => {
+      // Exit review mode when a new round starts
+      window.inReview = false;
+      const reviewModal = document.getElementById('reviewModal');
+      if (reviewModal) reviewModal.style.display = 'none';
+      document.getElementById('timeLeft').textContent = formatTime(duration);
+      document.getElementById('roundTimer').style.display = 'block';
+      // Clear team guesses for new round
+      document.getElementById('teamGuesses').innerHTML = '';
+      // Hide timer controls while a round is active to reduce clutter
+      const timerControls = document.querySelector('.timer-controls');
+      if (timerControls) timerControls.style.display = 'none';
+    });
+
+    socket.on('roundTimeUpdate', (timeLeft) => {
+      document.getElementById('timeLeft').textContent = formatTime(timeLeft);
+      if (timeLeft <= 10) {
+        document.getElementById('timeLeft').classList.add('warning');
+      }
+    });
+
+    socket.on('roundEnded', () => {
+      document.getElementById('timeLeft').textContent = 'Time\'s up!';
+      document.getElementById('guessingControls').style.display = 'none';
+      wordsList.innerHTML = '';
+      // Restore timer controls after round ends
+      const timerControls = document.querySelector('.timer-controls');
+      if (timerControls) timerControls.style.display = 'block';
+    });
+
+    // Role-related event handlers
+    socket.on('error', (message) => {
+      // If duplicate-name during auto-rejoin, retry a few times with backoff
+      try {
+        if (typeof message === 'string' && message.toLowerCase().includes('already taken')) {
+          const lastRoom = localStorage.getItem('lastRoom');
+          const lastName = localStorage.getItem('lastName');
+          const lastTeam = localStorage.getItem('lastTeam');
+          const lastRole = localStorage.getItem('lastRole');
+          if (lastRoom && lastName && lastTeam && lastRole && autoRejoinAttempts < 5) {
+            autoRejoinAttempts++;
+            const backoff = 300 * autoRejoinAttempts;
+            console.log(`Auto-rejoin attempt ${autoRejoinAttempts} in ${backoff}ms due to name conflict`);
+            setTimeout(() => {
+              socket.emit('joinRoom', lastRoom, lastName, lastTeam, lastRole);
+            }, backoff);
+            return;
+          }
+        }
+      } catch (e) { console.error('Error handling error event', e); }
+      alert(message);
+    });
+
+    socket.on('playerRoleChanged', (data) => {
+      if (data.playerId === socket.id) {
+        currentRole = data.newRole;
+        updateRoleDisplay();
+      }
+      // If server provided describers object, update joinAsDescriber availability for selectedTeam
+      if (data.describers) {
+        const describerBtn = document.getElementById('joinAsDescriber');
+        if (describerBtn && selectedTeam) {
+          describerBtn.disabled = !!data.describers[selectedTeam] && data.describers[selectedTeam] !== mySocketId;
+        }
+      }
+    });
+
+    socket.on('describerLeft', (payload) => {
+      // payload may include team
+      const team = payload && payload.team;
+      const describerBtn = document.getElementById('joinAsDescriber');
+      if (describerBtn && team && selectedTeam === team) {
+        describerBtn.disabled = false;
+      }
+    });
+
+    socket.on('teamReadyStatus', (data) => {
+      // data: { team, allReady }
+      if (!data || !data.team) return;
+      teamReady[data.team] = !!data.allReady;
+      // If we're the describer for the current turn, enable start if our team is ready
+      const describers = (window.lastGameState && window.lastGameState.describers) || { red: null, blue: null };
+      const currentTurn = (window.lastGameState && window.lastGameState.currentTurn) || 'red';
+      if (mySocketId && describers[currentTurn] === mySocketId) {
+        if (startBtn) startBtn.disabled = !teamReady[currentTurn];
+      }
+    });
+
+    socket.on('notAllReady', () => {
+      alert('Not all players are ready yet. Ask your team members to Ready up.');
+    });
+
+    // Round review handler: show modal with words that were actually shown to describer and mark guessed/un-guessed
+    socket.on('roundReview', payload => {
+      try {
+        window.inReview = true;
+        const reviewModal = document.getElementById('reviewModal');
+        const reviewTitle = document.getElementById('reviewTitle');
+        const reviewWords = document.getElementById('reviewWords');
+        const reviewSubtitle = document.getElementById('reviewSubtitle');
+        if (!reviewModal || !reviewWords) return;
+
+        // Show the modal
+        reviewModal.style.display = 'flex';
+  // payload: { team, shownWords, guessedWords }
+  const teamName = payload.team || 'team';
+  const roundNum = payload.roundNumber || '?';
+  reviewTitle.textContent = `Round ${roundNum} Review — ${teamName.toUpperCase()} Team`;
+  reviewSubtitle.textContent = 'Words shown to the describer this round (guessed ones highlighted)';
+  reviewWords.innerHTML = '';
+  // guessedWords and shownWords may be arrays of strings or objects {word, points}
+  const guessedSet = new Set((payload.guessedWords || []).map(w => {
+    if (!w) return '';
+    return (typeof w === 'string') ? w.toLowerCase() : ((w.word) ? String(w.word).toLowerCase() : String(w).toLowerCase());
+  }));
+  (payload.shownWords || []).forEach(w => {
+          const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
+          const el = document.createElement('div');
+          el.className = 'team-guess';
+          el.style.padding = '8px 12px';
+          el.style.borderRadius = '8px';
+          el.style.margin = '4px';
+          el.style.display = 'inline-block';
+          
+          // Find the matched word in guessedWords to get full details
+          const matchedWord = (payload.guessedWords || []).find(gw => {
+            if (!gw) return false;
+            const gwText = typeof gw === 'string' ? gw : (gw.word || '');
+            return gwText.toLowerCase() === String(text).toLowerCase();
+          });
+          
+          const pts = matchedWord ? (matchedWord.points || 0) : 
+                     (typeof w === 'object' && w && w.points) ? w.points : null;
+          const isPartial = matchedWord && matchedWord.isPartialMatch && !matchedWord.completed;
+          
+          if (guessedSet.has(String(text).toLowerCase())) {
+            if (isPartial) {
+              // Partial match - yellow styling
+              el.style.background = 'rgba(241, 196, 15, 0.12)';
+              el.style.border = '1px solid rgba(241, 196, 15, 0.4)';
+              el.innerHTML = `${text} (partial)${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+            } else {
+              // Full match - green styling
+              el.style.background = 'rgba(46, 204, 113, 0.12)';
+              el.style.border = '1px solid rgba(46, 204, 113, 0.4)';
+              el.innerHTML = `${text} ✓${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+            }
+          } else {
+            // Not guessed - red styling
+            el.style.background = 'rgba(231, 76, 60, 0.06)';
+            el.style.border = '1px solid rgba(231, 76, 60, 0.15)';
+            el.innerHTML = `${text}${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+          }
+          reviewWords.appendChild(el);
+        });
+
+        // Also ensure observers can see the guessing area (so they can view teamGuesses)
+        const guessingArea = document.querySelector('.guessing-area');
+        if (guessingArea) guessingArea.style.display = 'block';
+      } catch (err) {
+        console.error('Error handling roundReview:', err);
+      }
+    });
+
+    // Close review modal (user may dismiss, it doesn't start the next round)
+    const closeReviewBtn = document.getElementById('closeReviewBtn');
+    if (closeReviewBtn) {
+      closeReviewBtn.onclick = () => {
+        const reviewModal = document.getElementById('reviewModal');
+        if (reviewModal) reviewModal.style.display = 'none';
+      };
+    }
+
+    // Receive game settings from server
+    socket.on('gameSettings', (settings) => {
+      Object.assign(gameSettings, settings);
+      // Store settings for round display
+      window.lastSettings = {...settings};
+
+      // Update settings panel inputs
+      document.getElementById("roundDuration").value = settings.roundDuration;
+      document.getElementById("roundsPerTeam").value = settings.roundsPerTeam;
+      document.getElementById("startingWords").value = settings.startingWords;
+      document.getElementById("wordRevealInterval").value = settings.wordRevealInterval;
+
+      // Update timer input to match round duration
+      const timerInput = document.getElementById("timerInput");
+      if (timerInput) timerInput.value = settings.roundDuration;
+    });
+
+    // Receive new word during round
+    socket.on('newWord', (word) => {
+      // For the current team's describer
+      if (currentRole === 'describer') {
+        const li = document.createElement("li");
+        const text = (typeof word === 'string') ? word : (word && word.word) ? word.word : String(word);
+        const pts = (word && typeof word === 'object' && word.points) ? word.points : null;
+  li.innerHTML = `${text}${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+        wordsList.appendChild(li);
+      }
+    });
+
+
+    // Helper function to format time
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+  </script>
+</body>
+</html>
