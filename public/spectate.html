@@ -128,11 +128,22 @@
   .chip.done { border-color: var(--green); background: rgba(46,204,113,0.12); }
   .chip .pts { font-size: 0.75rem; padding: 1px 6px; border-radius: 999px; background: var(--panel); color: var(--muted); }
 
+  /* The one high-value "extreme" bonus word each round - gold while still in
+     play, and a distinct glowing gold (not a brighter green) once guessed so
+     it never reads as just another routine correct/partial chip. */
+  .chip.extreme { border-color: #d4af37; background: linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.1)); }
+  .chip.extreme-guessed {
+    border-color: #d4af37;
+    background: linear-gradient(135deg, rgba(212,175,55,0.45), rgba(255,215,0,0.2));
+    box-shadow: 0 0 10px rgba(212,175,55,0.5);
+  }
+
   #liveFeed { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column-reverse; gap: 0.35rem; }
   .feed-item { font-size: 0.85rem; padding: 0.35rem 0.6rem; border-radius: 6px; background: var(--panel-2); }
   .feed-item.correct { color: var(--green); }
   .feed-item.partial { color: var(--yellow); }
   .feed-item.wrong { color: var(--muted); }
+  .feed-item.extreme-guessed { color: #d4af37; font-weight: 700; background: rgba(212,175,55,0.12); }
 
   .round-entry { border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem; margin-bottom: 0.75rem; background: var(--panel-2); }
   .round-entry .round-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.6rem; }
@@ -221,13 +232,25 @@
     return `${m}:${String(sec).padStart(2, '0')}`;
   }
 
+  // Shared by the live-words panel and the round-history chips so the two
+  // can't drift apart on how the extreme bonus word is marked.
+  function wordChipClass(w) {
+    const isExtreme = w && w.difficulty === 'extreme';
+    if (w.status === 'done') return 'chip' + (isExtreme ? ' extreme-guessed' : ' done');
+    if (w.status === 'partial') return 'chip partial' + (isExtreme ? ' extreme' : '');
+    return 'chip' + (isExtreme ? ' extreme' : '');
+  }
+  function wordChipPrefix(w) {
+    return (w && w.difficulty === 'extreme') ? '⚡ ' : '';
+  }
+
   function renderLiveWords(words) {
     const el = document.getElementById('liveWords');
     if (!words || words.length === 0) { el.innerHTML = '<div class="empty-hint">No round in progress.</div>'; return; }
     el.innerHTML = words.map(w => {
-      const cls = w.status === 'partial' ? 'chip partial' : w.status === 'done' ? 'chip done' : 'chip';
+      const cls = wordChipClass(w);
       const pts = w.status === 'partial' ? w.partialPoints : (w.points || w.originalPoints);
-      return `<div class="${cls}">${w.word}${pts ? `<span class="pts">+${pts}</span>` : ''}${w.guessedBy ? `<span class="pts">${w.guessedBy}</span>` : ''}</div>`;
+      return `<div class="${cls}">${wordChipPrefix(w)}${w.word}${pts ? `<span class="pts">+${pts}</span>` : ''}${w.guessedBy ? `<span class="pts">${w.guessedBy}</span>` : ''}</div>`;
     }).join('');
   }
 
@@ -257,9 +280,9 @@
       .map(([name, pts]) => `${name}: ${pts}pt${pts === 1 ? '' : 's'}`).join(', ') || 'nobody guessed anything';
 
     const wordChips = words.map(w => {
-      const cls = w.status === 'partial' ? 'chip partial' : w.status === 'done' ? 'chip done' : 'chip';
+      const cls = wordChipClass(w);
       const pts = w.status === 'partial' ? w.partialPoints : (w.points || w.originalPoints);
-      return `<div class="${cls}">${w.word}${pts ? `<span class="pts">+${pts}</span>` : ''}</div>`;
+      return `<div class="${cls}">${wordChipPrefix(w)}${w.word}${pts ? `<span class="pts">+${pts}</span>` : ''}</div>`;
     }).join('');
 
     const entry = document.createElement('div');
@@ -324,9 +347,13 @@
   });
   socket.on('correctGuess', (data, player) => {
     if (!roomCode) return;
+    // difficulty only ever arrives on a full completion, never on a partial
+    // match, so this can't fire for an in-progress fuzzy match on the
+    // extreme word - see the server-side comment on this payload.
+    const isExtreme = data.difficulty === 'extreme';
     if (data.isPartialMatch) addFeedItem(`${player.name} partially got "${data.word}" (+${data.points})`, 'partial');
-    else if (data.isCompletingPartial) addFeedItem(`${player.name} completed "${data.word}" (+${data.points})`, 'correct');
-    else addFeedItem(`${player.name} guessed "${data.word}" (+${data.points})`, 'correct');
+    else if (data.isCompletingPartial) addFeedItem(`${isExtreme ? '⚡ ' : ''}${player.name} completed "${data.word}" (+${data.points})`, isExtreme ? 'extreme-guessed' : 'correct');
+    else addFeedItem(`${isExtreme ? '⚡ ' : ''}${player.name} guessed "${data.word}" (+${data.points})`, isExtreme ? 'extreme-guessed' : 'correct');
   });
   socket.on('wrongGuess', (guess, player) => {
     if (!roomCode) return;

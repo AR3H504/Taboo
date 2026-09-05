@@ -139,6 +139,17 @@ input:focus {
 
 .icon-btn:hover { background-color: var(--hover-bg); }
 
+.icon-btn:disabled,
+.icon-btn.locked {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.icon-btn:disabled:hover,
+.icon-btn.locked:hover {
+    background-color: transparent;
+}
+
 /* Always-on live scoreboard, sitting in the header so it's visible no matter
    what screen (lobby, describing, guessing, review) is showing. */
 .scoreboard {
@@ -172,11 +183,17 @@ input:focus {
 .main-layout {
     display: grid;
     grid-template-columns: minmax(480px, 1.6fr) minmax(240px, 0.85fr) minmax(240px, 0.85fr);
-    gap: 1.5rem;
-    max-width: 1400px;
+    gap: clamp(1.5rem, 2vw, 2.5rem);
+    /* Scale with the viewport instead of stopping dead at a fixed width -
+       a fixed max-width looks fine on a ~1400-1600px-wide screen but leaves
+       large empty gutters on anything bigger, since the grid just sits
+       centered in unused space. The 95vw floor keeps a small breathing-room
+       margin at any size; the upper cap only kicks in on very wide/ultrawide
+       monitors so rows of word chips don't stretch into unreadably long lines. */
+    max-width: min(2200px, 95vw);
     margin: 0 auto;
     align-items: start;
-    padding: 1.5rem 1.5rem 2.5rem;
+    padding: clamp(1.5rem, 2vw, 2.5rem) clamp(1.5rem, 2vw, 2.5rem) 2.5rem;
 }
 
 .left-column { min-width: 0; }
@@ -340,6 +357,32 @@ input:focus {
 .word-item.partial-word, .team-guess.partial {
     border-color: var(--warning-color);
     background-color: rgba(243, 156, 18, 0.12);
+}
+
+/* The one high-value "extreme" bonus word each round - stands out from the
+   regular list so nobody misses the big point swing sitting in it. */
+.word-item.extreme, .team-guess.extreme {
+    border-color: #d4af37;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(212, 175, 55, 0.08));
+    box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.4), var(--shadow-sm);
+}
+
+/* A completed extreme word - deliberately its own look (gold glow + a pop
+   animation), not a brighter version of .correct or .partial, so a jackpot
+   completion can never be mistaken for a routine correct/partial guess.
+   Three-class selectors so this always outranks .correct/.partial/.extreme
+   regardless of stylesheet order. */
+.word-item.correct.extreme-guessed,
+.team-guess.correct.extreme-guessed {
+    border-color: #d4af37;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.4), rgba(255, 215, 0, 0.18));
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.55), 0 0 18px rgba(212, 175, 55, 0.5);
+    animation: extremeGuessedPop 0.6s ease-out;
+}
+
+@keyframes extremeGuessedPop {
+    0% { transform: scale(1.18); box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.85); }
+    100% { transform: scale(1); box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.55), 0 0 18px rgba(212, 175, 55, 0.5); }
 }
 
 .team-guess.wrong {
@@ -542,7 +585,6 @@ input:focus {
 .role-btn:disabled { background-color: var(--hover-bg); cursor: not-allowed; opacity: 0.5; border-style: dashed; }
 
 .role-controls { margin: 0.75rem 0; text-align: center; }
-.switch-btn { background-color: var(--accent-color); font-weight: 700; }
 .current-role { margin-top: 0.5rem; font-weight: 600; }
 
 .timer-controls { margin: 0.5rem 0; text-align: center; }

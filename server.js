@@ -58,10 +58,37 @@ function normalizeWordList(list, difficulty) {
 
 wordPacks.easy = normalizeWordList(wordPacks.easy || [], 'easy');
 wordPacks.medium = normalizeWordList(wordPacks.medium || [], 'medium');
+// The 'extreme' tier is never part of the normal easy/medium/mixed draw -
+// exactly one is added on top of a round's usual words (see startRound),
+// regardless of the room's difficulty setting.
+wordPacks.extreme = normalizeWordList(wordPacks.extreme || [], 'extreme');
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
 
 let rooms = {};
+
+// Shared shape for the 'updateGameState' broadcast, used everywhere a room's
+// state changes (join, settings, ready, round transitions, disconnect) so
+// every emit site stays in sync on fields like hostId/gameStarted instead of
+// drifting across the many call sites that need to send this.
+function buildGameState(room) {
+    return {
+        describers: { ...room.describers },
+        currentTurn: room.currentTurn,
+        currentRound: room.currentRound,
+        roundActive: !!room.roundActive,
+        settings: room.settings,
+        hostId: room.hostId,
+        // The game is considered "started" once the first round has begun -
+        // settings are only editable before this point (see updateGameSettings).
+        gameStarted: room.currentRound > 0,
+        players: room.players.map(p => ({ ...p })),
+        teams: {
+            red: { score: room.teams.red.score },
+            blue: { score: room.teams.blue.score }
+        }
+    };
+}
 
 // Every word handed out to a room must be its own object instance. The pack
 // arrays in wordPacks are loaded once at startup and reused for every game;
@@ -118,6 +145,27 @@ function getRandomWords(n, difficulty = 'mixed', options = {}) {
     return shuffled.slice(0, n).map(instantiateWord);
 }
 
+// Draws the round's one "extreme" bonus word, tracking which ones this room
+// has already used so a game doesn't repeat one before the whole pool (39
+// words) has been through - only relevant once a game runs that long, since
+// it recycles (clearing the used-set) rather than getting stuck with none
+// left to draw.
+function getExtremeBonusWord(room) {
+    const pack = wordPacks.extreme || [];
+    if (pack.length === 0) return null;
+    if (!room.usedExtremeWords) room.usedExtremeWords = new Set();
+
+    let pool = pack.filter(w => !room.usedExtremeWords.has(w.word.toLowerCase()));
+    if (pool.length === 0) {
+        room.usedExtremeWords.clear();
+        pool = pack;
+    }
+
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    room.usedExtremeWords.add(chosen.word.toLowerCase());
+    return instantiateWord(chosen);
+}
+
 // Top up the room's reveal queue so it never just runs dry mid-round. A
 // round's total word count can't be predicted up front - a slow team might
 // only get through a handful, a fast one (especially with the burst-refill
@@ -172,10 +220,11 @@ io.on('connection', (socket) => {
 
     socket.on('createRoom', () => {
         const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        rooms[roomCode] = { 
-            players: [], 
+        rooms[roomCode] = {
+            players: [],
             words: getRandomWords(9, 'mixed'),
             describers: { red: null, blue: null },
+            hostId: socket.id,
             currentTurn: 'red',
             teams: {
                 red: { players: [], score: 0 },
@@ -240,18 +289,7 @@ io.on('connection', (socket) => {
             // If nothing changed, just return current state
             if (existingPlayer.team === team && existingPlayer.role === role && existingPlayer.name === name) {
                 // re-emit state so client stays in sync
-                io.to(roomCode).emit('updateGameState', {
-                    describers: {...rooms[roomCode].describers},
-                    currentTurn: rooms[roomCode].currentTurn,
-                    currentRound: rooms[roomCode].currentRound,
-                    roundActive: !!rooms[roomCode].roundActive,
-                    settings: rooms[roomCode].settings,
-                    players: rooms[roomCode].players.map(p => ({...p})),
-                    teams: {
-                        red: { score: rooms[roomCode].teams.red.score },
-                        blue: { score: rooms[roomCode].teams.blue.score }
-                    }
-                });
+                io.to(roomCode).emit('updateGameState', buildGameState(rooms[roomCode]));
                 return;
             }
 
@@ -316,18 +354,7 @@ io.on('connection', (socket) => {
 
             // Emit updated state
             io.to(roomCode).emit('playerList', rooms[roomCode].players);
-            io.to(roomCode).emit('updateGameState', {
-                describers: {...rooms[roomCode].describers},
-                currentTurn: rooms[roomCode].currentTurn,
-                currentRound: rooms[roomCode].currentRound,
-                roundActive: !!rooms[roomCode].roundActive,
-                settings: rooms[roomCode].settings,
-                players: rooms[roomCode].players.map(p => ({...p})),
-                teams: {
-                    red: { score: rooms[roomCode].teams.red.score },
-                    blue: { score: rooms[roomCode].teams.blue.score }
-                }
-            });
+            io.to(roomCode).emit('updateGameState', buildGameState(rooms[roomCode]));
             return;
         }
 
@@ -361,19 +388,7 @@ io.on('connection', (socket) => {
         socket.join(roomCode);
         
         // Send initial game state to all players
-        const gameState = {
-            describers: {...rooms[roomCode].describers},
-            currentTurn: rooms[roomCode].currentTurn,
-            currentRound: rooms[roomCode].currentRound,
-            roundActive: !!rooms[roomCode].roundActive,
-            settings: rooms[roomCode].settings,
-            players: rooms[roomCode].players.map(p => ({...p})),
-            teams: {
-                red: { score: rooms[roomCode].teams.red.score },
-                blue: { score: rooms[roomCode].teams.blue.score }
-            }
-        };
-        io.to(roomCode).emit('updateGameState', gameState);
+        io.to(roomCode).emit('updateGameState', buildGameState(rooms[roomCode]));
         io.to(socket.id).emit('joinSuccess');
         
         // If a round is active, send the appropriate UI state to the new player
@@ -414,8 +429,23 @@ io.on('connection', (socket) => {
 
     // Handle game settings update
     socket.on('updateGameSettings', (roomCode, settings) => {
-        if (!rooms[roomCode]) return;
-        
+        const room = rooms[roomCode];
+        if (!room) return;
+
+        // Only the player who created the room may change its settings.
+        if (room.hostId !== socket.id) {
+            socket.emit('error', 'Only the room host can change the game settings');
+            return;
+        }
+
+        // Settings are only editable in the lobby, before the first round has
+        // started - once the game is underway they're locked for its duration
+        // so a mid-game change can't retroactively alter rounds already played.
+        if (room.currentRound > 0) {
+            socket.emit('error', 'Settings are locked once the game has started');
+            return;
+        }
+
         // Validate and update settings
         const newSettings = {
             roundDuration: Math.min(Math.max(settings.roundDuration, 30), 300),
@@ -424,25 +454,14 @@ io.on('connection', (socket) => {
             startingWords: Math.min(Math.max(settings.startingWords, 1), 10),
             wordRevealInterval: Math.min(Math.max(settings.wordRevealInterval, 5), 60)
         };
-        
-        rooms[roomCode].settings = newSettings;
-        
+
+        room.settings = newSettings;
+
         // First emit the settings update
         io.to(roomCode).emit('gameSettings', newSettings);
-        
+
         // Then emit a full game state update to refresh the round display
-    io.to(roomCode).emit('updateGameState', {
-        describers: {...rooms[roomCode].describers},
-        currentTurn: rooms[roomCode].currentTurn,
-        currentRound: rooms[roomCode].currentRound,
-        roundActive: !!rooms[roomCode].roundActive,
-        settings: newSettings,
-        players: rooms[roomCode].players.map(p => ({...p})),
-        teams: {
-            red: { score: rooms[roomCode].teams.red.score },
-            blue: { score: rooms[roomCode].teams.blue.score }
-        }
-    });
+        io.to(roomCode).emit('updateGameState', buildGameState(room));
     });
 
     socket.on('startRound', (roomCode, duration = 60) => {
@@ -486,6 +505,13 @@ io.on('connection', (socket) => {
     // in the guess handler pull through it), so a round never runs dry no
     // matter how many words end up getting shown over its lifetime.
     const initialWords = getRandomWords(settings.startingWords, settings.difficulty, { enforceRatio: true, easyRatio: 0.6 });
+    // Exactly one high-value "extreme" bonus word per round, on top of the
+    // normal words above - regardless of the room's difficulty setting. It's
+    // only ever drawn here (never by the mid-round refill in ensureWordSupply,
+    // which draws exclusively from the easy/medium pool), so this is the one
+    // and only place an extreme word can enter a round.
+    const bonusWord = getExtremeBonusWord(rooms[roomCode]);
+    if (bonusWord) initialWords.push(bonusWord);
     // observerWords accumulates every word shown this round (active, partial,
     // and done - words are only ever removed from `words`, never from this),
     // so it doubles as both the "shown this round" history and the live
@@ -672,18 +698,7 @@ io.on('connection', (socket) => {
                         rooms[roomCode].players.forEach(p => { p.ready = false; });
 
                             // Broadcast updated game state with new turn
-                            io.to(roomCode).emit('updateGameState', {
-                                describers: {...rooms[roomCode].describers},
-                                currentTurn: rooms[roomCode].currentTurn,
-                                currentRound: rooms[roomCode].currentRound,
-                                roundActive: !!rooms[roomCode].roundActive,
-                                settings: rooms[roomCode].settings,
-                                players: rooms[roomCode].players.map(p => ({...p})),
-                                teams: {
-                                    red: { score: rooms[roomCode].teams.red.score },
-                                    blue: { score: rooms[roomCode].teams.blue.score }
-                                }
-                            });
+                            io.to(roomCode).emit('updateGameState', buildGameState(rooms[roomCode]));
             }
         }, 1000);
     });
@@ -749,18 +764,7 @@ io.on('connection', (socket) => {
             // (not the full round history) - a word disappears from their
             // view the moment it's actually finished, same as the describer's.
             io.to(roomCode).emit('observerWordsRoom', { team: room.currentTurn, words: room.words });
-            io.to(roomCode).emit('updateGameState', {
-                describers: { ...room.describers },
-                currentTurn: room.currentTurn,
-                currentRound: room.currentRound,
-                roundActive: !!room.roundActive,
-                settings: room.settings,
-                players: room.players.map(p => ({ ...p })),
-                teams: {
-                    red: { score: room.teams.red.score },
-                    blue: { score: room.teams.blue.score }
-                }
-            });
+            io.to(roomCode).emit('updateGameState', buildGameState(room));
         }
 
         // 1) Exact text match against anything still in play (active or partial).
@@ -775,14 +779,20 @@ io.on('connection', (socket) => {
                     isCompletingPartial: true,
                     points: remaining,
                     basePoints: exactWord.originalPoints,
-                    partialPoints: exactWord.partialPoints
+                    partialPoints: exactWord.partialPoints,
+                    // Only carried on a full completion, never on the partial-match
+                    // guess below - that's what lets the client give a completed
+                    // extreme word its own look without it bleeding into the
+                    // "partial" styling of an in-progress fuzzy match.
+                    difficulty: exactWord.difficulty
                 }, player);
             } else {
                 finishWord(exactWord);
                 awardPoints(exactWord.originalPoints);
                 io.to(roomCode).emit('correctGuess', {
                     word: exactWord.word,
-                    points: exactWord.originalPoints
+                    points: exactWord.originalPoints,
+                    difficulty: exactWord.difficulty
                 }, player);
             }
             broadcastRoundState();
@@ -840,19 +850,7 @@ io.on('connection', (socket) => {
         player.ready = !!isReady;
 
         // Emit initial game state
-        const gameState = {
-            describers: {...rooms[roomCode].describers},
-            currentTurn: rooms[roomCode].currentTurn,
-            currentRound: rooms[roomCode].currentRound,
-            roundActive: !!rooms[roomCode].roundActive,
-            settings: rooms[roomCode].settings,
-            players: rooms[roomCode].players.map(p => ({...p})),
-            teams: {
-                red: { score: rooms[roomCode].teams.red.score },
-                blue: { score: rooms[roomCode].teams.blue.score }
-            }
-        };
-        io.to(roomCode).emit('updateGameState', gameState);
+        io.to(roomCode).emit('updateGameState', buildGameState(rooms[roomCode]));
 
         // For each team, check if team members (excluding that team's describer) are ready and notify that team's describer
         ['red','blue'].forEach(team => {
@@ -905,34 +903,34 @@ io.on('connection', (socket) => {
         console.log('user disconnected:', socket.id);
         for (const roomCode in rooms) {
             const room = rooms[roomCode];
+            const wasHost = room.hostId === socket.id;
             const player = room.players.find(p => p.id === socket.id);
-            if (!player) continue;
+            if (!player && !wasHost) continue;
 
-            // If they were describer, clear describer slot
-            if (room.describers[player.team] === player.id) {
-                room.describers[player.team] = null;
-                // Tell room that describer left
-                io.to(roomCode).emit('describerLeft', { team: player.team });
+            if (player) {
+                // If they were describer, clear describer slot
+                if (room.describers[player.team] === player.id) {
+                    room.describers[player.team] = null;
+                    // Tell room that describer left
+                    io.to(roomCode).emit('describerLeft', { team: player.team });
+                }
+
+                // Remove from team players list and players array
+                room.teams[player.team].players = room.teams[player.team].players.filter(p => p.id !== player.id);
+                room.players = room.players.filter(p => p.id !== player.id);
             }
 
-            // Remove from team players list and players array
-            room.teams[player.team].players = room.teams[player.team].players.filter(p => p.id !== player.id);
-            room.players = room.players.filter(p => p.id !== player.id);
+            // If the room's creator disconnected, hand the host role to
+            // whoever's left rather than leaving it stuck on a socket id
+            // that can never reconnect (a refresh gets a brand-new socket
+            // id, so the original host has no way to reclaim it either).
+            if (wasHost) {
+                room.hostId = room.players.length > 0 ? room.players[0].id : null;
+            }
 
             // Emit updated lists
             io.to(roomCode).emit('playerList', room.players);
-            io.to(roomCode).emit('updateGameState', {
-                describers: {...room.describers},
-                currentTurn: room.currentTurn,
-                currentRound: room.currentRound,
-                roundActive: !!room.roundActive,
-                settings: room.settings,
-                players: room.players.map(p => ({...p})),
-                teams: {
-                    red: { score: room.teams.red.score },
-                    blue: { score: room.teams.blue.score }
-                }
-            });
+            io.to(roomCode).emit('updateGameState', buildGameState(room));
         }
     });
 });

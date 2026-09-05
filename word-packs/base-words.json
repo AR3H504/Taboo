@@ -1603,6 +1603,1586 @@
     {
       "word": "organize",
       "points": 5
+    },
+    {
+      "word": "ant",
+      "points": 4
+    },
+    {
+      "word": "bee",
+      "points": 4
+    },
+    {
+      "word": "wasp",
+      "points": 5
+    },
+    {
+      "word": "spider",
+      "points": 5
+    },
+    {
+      "word": "snail",
+      "points": 5
+    },
+    {
+      "word": "worm",
+      "points": 5
+    },
+    {
+      "word": "butterfly",
+      "points": 6
+    },
+    {
+      "word": "frog",
+      "points": 5
+    },
+    {
+      "word": "lizard",
+      "points": 5
+    },
+    {
+      "word": "snake",
+      "points": 5
+    },
+    {
+      "word": "owl",
+      "points": 4
+    },
+    {
+      "word": "eagle",
+      "points": 5
+    },
+    {
+      "word": "hawk",
+      "points": 5
+    },
+    {
+      "word": "crow",
+      "points": 5
+    },
+    {
+      "word": "sparrow",
+      "points": 6
+    },
+    {
+      "word": "penguin",
+      "points": 6
+    },
+    {
+      "word": "seal",
+      "points": 5
+    },
+    {
+      "word": "whale",
+      "points": 5
+    },
+    {
+      "word": "dolphin",
+      "points": 6
+    },
+    {
+      "word": "shark",
+      "points": 5
+    },
+    {
+      "word": "octopus",
+      "points": 6
+    },
+    {
+      "word": "crab",
+      "points": 5
+    },
+    {
+      "word": "lobster",
+      "points": 6
+    },
+    {
+      "word": "shrimp",
+      "points": 5
+    },
+    {
+      "word": "squid",
+      "points": 5
+    },
+    {
+      "word": "jellyfish",
+      "points": 6
+    },
+    {
+      "word": "starfish",
+      "points": 6
+    },
+    {
+      "word": "ladybug",
+      "points": 6
+    },
+    {
+      "word": "firefly",
+      "points": 6
+    },
+    {
+      "word": "mosquito",
+      "points": 6
+    },
+    {
+      "word": "fox",
+      "points": 4
+    },
+    {
+      "word": "wolf",
+      "points": 5
+    },
+    {
+      "word": "bear",
+      "points": 5
+    },
+    {
+      "word": "deer",
+      "points": 5
+    },
+    {
+      "word": "squirrel",
+      "points": 6
+    },
+    {
+      "word": "raccoon",
+      "points": 6
+    },
+    {
+      "word": "skunk",
+      "points": 5
+    },
+    {
+      "word": "rat",
+      "points": 4
+    },
+    {
+      "word": "donkey",
+      "points": 5
+    },
+    {
+      "word": "goat",
+      "points": 5
+    },
+    {
+      "word": "llama",
+      "points": 5
+    },
+    {
+      "word": "camel",
+      "points": 5
+    },
+    {
+      "word": "zebra",
+      "points": 5
+    },
+    {
+      "word": "elephant",
+      "points": 6
+    },
+    {
+      "word": "giraffe",
+      "points": 6
+    },
+    {
+      "word": "monkey",
+      "points": 5
+    },
+    {
+      "word": "gorilla",
+      "points": 6
+    },
+    {
+      "word": "kangaroo",
+      "points": 6
+    },
+    {
+      "word": "koala",
+      "points": 5
+    },
+    {
+      "word": "panda",
+      "points": 5
+    },
+    {
+      "word": "tiger",
+      "points": 5
+    },
+    {
+      "word": "leopard",
+      "points": 6
+    },
+    {
+      "word": "cheetah",
+      "points": 6
+    },
+    {
+      "word": "hippo",
+      "points": 5
+    },
+    {
+      "word": "rhino",
+      "points": 5
+    },
+    {
+      "word": "crocodile",
+      "points": 6
+    },
+    {
+      "word": "alligator",
+      "points": 6
+    },
+    {
+      "word": "turkey",
+      "points": 5
+    },
+    {
+      "word": "rooster",
+      "points": 6
+    },
+    {
+      "word": "hen",
+      "points": 4
+    },
+    {
+      "word": "chick",
+      "points": 5
+    },
+    {
+      "word": "peacock",
+      "points": 6
+    },
+    {
+      "word": "flamingo",
+      "points": 6
+    },
+    {
+      "word": "stork",
+      "points": 5
+    },
+    {
+      "word": "pigeon",
+      "points": 5
+    },
+    {
+      "word": "parrot",
+      "points": 5
+    },
+    {
+      "word": "hammer",
+      "points": 5
+    },
+    {
+      "word": "nail",
+      "points": 5
+    },
+    {
+      "word": "screw",
+      "points": 5
+    },
+    {
+      "word": "screwdriver",
+      "points": 7
+    },
+    {
+      "word": "wrench",
+      "points": 5
+    },
+    {
+      "word": "drill",
+      "points": 5
+    },
+    {
+      "word": "saw",
+      "points": 4
+    },
+    {
+      "word": "ladder",
+      "points": 5
+    },
+    {
+      "word": "toolbox",
+      "points": 6
+    },
+    {
+      "word": "rope",
+      "points": 5
+    },
+    {
+      "word": "chain",
+      "points": 5
+    },
+    {
+      "word": "nail polish",
+      "points": 7
+    },
+    {
+      "word": "glue",
+      "points": 5
+    },
+    {
+      "word": "tape",
+      "points": 5
+    },
+    {
+      "word": "scissors",
+      "points": 6
+    },
+    {
+      "word": "ruler",
+      "points": 5
+    },
+    {
+      "word": "stapler",
+      "points": 6
+    },
+    {
+      "word": "clip",
+      "points": 5
+    },
+    {
+      "word": "pin",
+      "points": 4
+    },
+    {
+      "word": "needle",
+      "points": 5
+    },
+    {
+      "word": "thread",
+      "points": 5
+    },
+    {
+      "word": "button",
+      "points": 5
+    },
+    {
+      "word": "zipper",
+      "points": 5
+    },
+    {
+      "word": "fabric",
+      "points": 5
+    },
+    {
+      "word": "wool",
+      "points": 5
+    },
+    {
+      "word": "cotton",
+      "points": 5
+    },
+    {
+      "word": "leather",
+      "points": 6
+    },
+    {
+      "word": "plastic",
+      "points": 6
+    },
+    {
+      "word": "metal",
+      "points": 5
+    },
+    {
+      "word": "wood",
+      "points": 5
+    },
+    {
+      "word": "glass jar",
+      "points": 6
+    },
+    {
+      "word": "brick",
+      "points": 5
+    },
+    {
+      "word": "cement",
+      "points": 5
+    },
+    {
+      "word": "sand",
+      "points": 5
+    },
+    {
+      "word": "stone",
+      "points": 5
+    },
+    {
+      "word": "rock",
+      "points": 5
+    },
+    {
+      "word": "pebble",
+      "points": 5
+    },
+    {
+      "word": "mud",
+      "points": 4
+    },
+    {
+      "word": "dust",
+      "points": 5
+    },
+    {
+      "word": "smoke",
+      "points": 5
+    },
+    {
+      "word": "ash",
+      "points": 4
+    },
+    {
+      "word": "ice",
+      "points": 4
+    },
+    {
+      "word": "steam",
+      "points": 5
+    },
+    {
+      "word": "bubble",
+      "points": 5
+    },
+    {
+      "word": "wave",
+      "points": 5
+    },
+    {
+      "word": "tide",
+      "points": 5
+    },
+    {
+      "word": "ocean",
+      "points": 5
+    },
+    {
+      "word": "lake",
+      "points": 5
+    },
+    {
+      "word": "pond",
+      "points": 5
+    },
+    {
+      "word": "stream",
+      "points": 5
+    },
+    {
+      "word": "waterfall",
+      "points": 6
+    },
+    {
+      "word": "island",
+      "points": 5
+    },
+    {
+      "word": "desert",
+      "points": 5
+    },
+    {
+      "word": "valley",
+      "points": 5
+    },
+    {
+      "word": "hill",
+      "points": 5
+    },
+    {
+      "word": "cave",
+      "points": 5
+    },
+    {
+      "word": "cliff",
+      "points": 5
+    },
+    {
+      "word": "volcano",
+      "points": 6
+    },
+    {
+      "word": "earthquake",
+      "points": 7
+    },
+    {
+      "word": "rainbow",
+      "points": 6
+    },
+    {
+      "word": "sunrise",
+      "points": 6
+    },
+    {
+      "word": "sunset",
+      "points": 5
+    },
+    {
+      "word": "shadow",
+      "points": 5
+    },
+    {
+      "word": "reflection",
+      "points": 7
+    },
+    {
+      "word": "echo",
+      "points": 5
+    },
+    {
+      "word": "nose",
+      "points": 5
+    },
+    {
+      "word": "ear",
+      "points": 4
+    },
+    {
+      "word": "eye",
+      "points": 4
+    },
+    {
+      "word": "mouth",
+      "points": 5
+    },
+    {
+      "word": "tongue",
+      "points": 5
+    },
+    {
+      "word": "tooth",
+      "points": 5
+    },
+    {
+      "word": "chin",
+      "points": 5
+    },
+    {
+      "word": "cheek",
+      "points": 5
+    },
+    {
+      "word": "eyebrow",
+      "points": 6
+    },
+    {
+      "word": "eyelash",
+      "points": 6
+    },
+    {
+      "word": "neck",
+      "points": 5
+    },
+    {
+      "word": "shoulder",
+      "points": 6
+    },
+    {
+      "word": "elbow",
+      "points": 5
+    },
+    {
+      "word": "wrist",
+      "points": 5
+    },
+    {
+      "word": "hand",
+      "points": 5
+    },
+    {
+      "word": "finger",
+      "points": 5
+    },
+    {
+      "word": "thumb",
+      "points": 5
+    },
+    {
+      "word": "nail (finger)",
+      "points": 7
+    },
+    {
+      "word": "knee",
+      "points": 5
+    },
+    {
+      "word": "ankle",
+      "points": 5
+    },
+    {
+      "word": "foot",
+      "points": 5
+    },
+    {
+      "word": "toe",
+      "points": 4
+    },
+    {
+      "word": "heart",
+      "points": 5
+    },
+    {
+      "word": "lung",
+      "points": 5
+    },
+    {
+      "word": "brain",
+      "points": 5
+    },
+    {
+      "word": "skin",
+      "points": 5
+    },
+    {
+      "word": "bone",
+      "points": 5
+    },
+    {
+      "word": "muscle",
+      "points": 5
+    },
+    {
+      "word": "blood",
+      "points": 5
+    },
+    {
+      "word": "stomach",
+      "points": 6
+    },
+    {
+      "word": "thumbs up",
+      "points": 6
+    },
+    {
+      "word": "wink",
+      "points": 5
+    },
+    {
+      "word": "smile",
+      "points": 5
+    },
+    {
+      "word": "frown",
+      "points": 5
+    },
+    {
+      "word": "laugh",
+      "points": 5
+    },
+    {
+      "word": "cry",
+      "points": 4
+    },
+    {
+      "word": "yawn",
+      "points": 5
+    },
+    {
+      "word": "sneeze",
+      "points": 5
+    },
+    {
+      "word": "cough",
+      "points": 5
+    },
+    {
+      "word": "hiccup",
+      "points": 5
+    },
+    {
+      "word": "whisper",
+      "points": 6
+    },
+    {
+      "word": "shout",
+      "points": 5
+    },
+    {
+      "word": "sing along",
+      "points": 6
+    },
+    {
+      "word": "clap",
+      "points": 5
+    },
+    {
+      "word": "wave hello",
+      "points": 6
+    },
+    {
+      "word": "hug",
+      "points": 4
+    },
+    {
+      "word": "kiss",
+      "points": 5
+    },
+    {
+      "word": "handshake",
+      "points": 6
+    },
+    {
+      "word": "high five",
+      "points": 6
+    },
+    {
+      "word": "bicycle",
+      "points": 6
+    },
+    {
+      "word": "scooter",
+      "points": 6
+    },
+    {
+      "word": "skateboard",
+      "points": 7
+    },
+    {
+      "word": "roller skates",
+      "points": 7
+    },
+    {
+      "word": "truck",
+      "points": 5
+    },
+    {
+      "word": "bus",
+      "points": 4
+    },
+    {
+      "word": "train",
+      "points": 5
+    },
+    {
+      "word": "subway",
+      "points": 5
+    },
+    {
+      "word": "ferry",
+      "points": 5
+    },
+    {
+      "word": "boat",
+      "points": 5
+    },
+    {
+      "word": "sailboat",
+      "points": 6
+    },
+    {
+      "word": "canoe",
+      "points": 5
+    },
+    {
+      "word": "kayak",
+      "points": 5
+    },
+    {
+      "word": "submarine",
+      "points": 6
+    },
+    {
+      "word": "airplane",
+      "points": 6
+    },
+    {
+      "word": "helicopter",
+      "points": 7
+    },
+    {
+      "word": "hot air balloon",
+      "points": 8
+    },
+    {
+      "word": "rocket",
+      "points": 5
+    },
+    {
+      "word": "spaceship",
+      "points": 6
+    },
+    {
+      "word": "traffic light",
+      "points": 7
+    },
+    {
+      "word": "stop sign",
+      "points": 6
+    },
+    {
+      "word": "crosswalk",
+      "points": 6
+    },
+    {
+      "word": "sidewalk",
+      "points": 6
+    },
+    {
+      "word": "highway",
+      "points": 6
+    },
+    {
+      "word": "bridge (structure)",
+      "points": 8
+    },
+    {
+      "word": "tunnel",
+      "points": 5
+    },
+    {
+      "word": "parking lot",
+      "points": 7
+    },
+    {
+      "word": "gas station",
+      "points": 7
+    },
+    {
+      "word": "toll booth",
+      "points": 6
+    },
+    {
+      "word": "birthday cake",
+      "points": 7
+    },
+    {
+      "word": "candle",
+      "points": 5
+    },
+    {
+      "word": "balloon",
+      "points": 6
+    },
+    {
+      "word": "confetti",
+      "points": 6
+    },
+    {
+      "word": "wrapping paper",
+      "points": 8
+    },
+    {
+      "word": "ribbon",
+      "points": 5
+    },
+    {
+      "word": "card (greeting)",
+      "points": 7
+    },
+    {
+      "word": "invitation",
+      "points": 7
+    },
+    {
+      "word": "costume",
+      "points": 6
+    },
+    {
+      "word": "mask",
+      "points": 5
+    },
+    {
+      "word": "firework",
+      "points": 6
+    },
+    {
+      "word": "toy",
+      "points": 4
+    },
+    {
+      "word": "doll",
+      "points": 5
+    },
+    {
+      "word": "teddy bear",
+      "points": 6
+    },
+    {
+      "word": "puzzle",
+      "points": 5
+    },
+    {
+      "word": "blocks",
+      "points": 5
+    },
+    {
+      "word": "crayon",
+      "points": 5
+    },
+    {
+      "word": "marker",
+      "points": 5
+    },
+    {
+      "word": "sticker",
+      "points": 6
+    },
+    {
+      "word": "kite",
+      "points": 5
+    },
+    {
+      "word": "yo-yo",
+      "points": 5
+    },
+    {
+      "word": "marble",
+      "points": 5
+    },
+    {
+      "word": "top (toy)",
+      "points": 5
+    },
+    {
+      "word": "board game",
+      "points": 6
+    },
+    {
+      "word": "dice",
+      "points": 5
+    },
+    {
+      "word": "checkers",
+      "points": 6
+    },
+    {
+      "word": "jigsaw",
+      "points": 5
+    },
+    {
+      "word": "coloring book",
+      "points": 7
+    },
+    {
+      "word": "sandbox",
+      "points": 6
+    },
+    {
+      "word": "swing",
+      "points": 5
+    },
+    {
+      "word": "slide",
+      "points": 5
+    },
+    {
+      "word": "seesaw",
+      "points": 5
+    },
+    {
+      "word": "trampoline",
+      "points": 7
+    },
+    {
+      "word": "sunscreen",
+      "points": 6
+    },
+    {
+      "word": "sunglasses",
+      "points": 7
+    },
+    {
+      "word": "flip flops",
+      "points": 6
+    },
+    {
+      "word": "swimsuit",
+      "points": 6
+    },
+    {
+      "word": "towel (beach)",
+      "points": 7
+    },
+    {
+      "word": "cooler",
+      "points": 5
+    },
+    {
+      "word": "tent",
+      "points": 5
+    },
+    {
+      "word": "sleeping bag",
+      "points": 7
+    },
+    {
+      "word": "flashlight",
+      "points": 7
+    },
+    {
+      "word": "campfire",
+      "points": 6
+    },
+    {
+      "word": "marshmallow",
+      "points": 7
+    },
+    {
+      "word": "binoculars",
+      "points": 7
+    },
+    {
+      "word": "map",
+      "points": 4
+    },
+    {
+      "word": "backpack (hiking)",
+      "points": 8
+    },
+    {
+      "word": "compass (hiking)",
+      "points": 8
+    },
+    {
+      "word": "canteen",
+      "points": 6
+    },
+    {
+      "word": "toothpick",
+      "points": 6
+    },
+    {
+      "word": "straw",
+      "points": 5
+    },
+    {
+      "word": "chopsticks",
+      "points": 7
+    },
+    {
+      "word": "ketchup",
+      "points": 6
+    },
+    {
+      "word": "mustard",
+      "points": 6
+    },
+    {
+      "word": "mayonnaise",
+      "points": 7
+    },
+    {
+      "word": "salt",
+      "points": 5
+    },
+    {
+      "word": "sugar",
+      "points": 5
+    },
+    {
+      "word": "flour",
+      "points": 5
+    },
+    {
+      "word": "oil",
+      "points": 4
+    },
+    {
+      "word": "vinegar",
+      "points": 6
+    },
+    {
+      "word": "sauce",
+      "points": 5
+    },
+    {
+      "word": "spice",
+      "points": 5
+    },
+    {
+      "word": "herb",
+      "points": 5
+    },
+    {
+      "word": "basil",
+      "points": 5
+    },
+    {
+      "word": "mint",
+      "points": 5
+    },
+    {
+      "word": "cinnamon",
+      "points": 6
+    },
+    {
+      "word": "vanilla",
+      "points": 6
+    },
+    {
+      "word": "popcorn",
+      "points": 6
+    },
+    {
+      "word": "pretzel",
+      "points": 6
+    },
+    {
+      "word": "chip",
+      "points": 5
+    },
+    {
+      "word": "cracker",
+      "points": 6
+    },
+    {
+      "word": "waffle",
+      "points": 5
+    },
+    {
+      "word": "pancake",
+      "points": 6
+    },
+    {
+      "word": "syrup",
+      "points": 5
+    },
+    {
+      "word": "jelly",
+      "points": 5
+    },
+    {
+      "word": "peanut butter",
+      "points": 7
+    },
+    {
+      "word": "donut",
+      "points": 5
+    },
+    {
+      "word": "muffin",
+      "points": 5
+    },
+    {
+      "word": "bagel",
+      "points": 5
+    },
+    {
+      "word": "toast",
+      "points": 5
+    },
+    {
+      "word": "cereal",
+      "points": 5
+    },
+    {
+      "word": "oatmeal",
+      "points": 6
+    },
+    {
+      "word": "lemonade",
+      "points": 6
+    },
+    {
+      "word": "water bottle",
+      "points": 7
+    },
+    {
+      "word": "thermos",
+      "points": 6
+    },
+    {
+      "word": "sweater",
+      "points": 6
+    },
+    {
+      "word": "hoodie",
+      "points": 5
+    },
+    {
+      "word": "pajamas",
+      "points": 6
+    },
+    {
+      "word": "gloves",
+      "points": 5
+    },
+    {
+      "word": "mittens",
+      "points": 6
+    },
+    {
+      "word": "earmuffs",
+      "points": 6
+    },
+    {
+      "word": "tie",
+      "points": 4
+    },
+    {
+      "word": "suit",
+      "points": 5
+    },
+    {
+      "word": "uniform",
+      "points": 6
+    },
+    {
+      "word": "apron",
+      "points": 5
+    },
+    {
+      "word": "raincoat (jacket)",
+      "points": 8
+    },
+    {
+      "word": "wetsuit",
+      "points": 6
+    },
+    {
+      "word": "helmet",
+      "points": 5
+    },
+    {
+      "word": "cap",
+      "points": 4
+    },
+    {
+      "word": "beanie",
+      "points": 5
+    },
+    {
+      "word": "bikini",
+      "points": 5
+    },
+    {
+      "word": "swim trunks",
+      "points": 7
+    },
+    {
+      "word": "wheelchair",
+      "points": 7
+    },
+    {
+      "word": "crutches",
+      "points": 6
+    },
+    {
+      "word": "bandage",
+      "points": 6
+    },
+    {
+      "word": "cast",
+      "points": 5
+    },
+    {
+      "word": "stethoscope",
+      "points": 7
+    },
+    {
+      "word": "syringe",
+      "points": 6
+    },
+    {
+      "word": "pill",
+      "points": 5
+    },
+    {
+      "word": "medicine",
+      "points": 6
+    },
+    {
+      "word": "thermometer (medical)",
+      "points": 8
+    },
+    {
+      "word": "x-ray",
+      "points": 5
+    },
+    {
+      "word": "wheel",
+      "points": 5
+    },
+    {
+      "word": "engine",
+      "points": 5
+    },
+    {
+      "word": "battery",
+      "points": 6
+    },
+    {
+      "word": "cable",
+      "points": 5
+    },
+    {
+      "word": "plug",
+      "points": 5
+    },
+    {
+      "word": "socket",
+      "points": 5
+    },
+    {
+      "word": "switch",
+      "points": 5
+    },
+    {
+      "word": "bulb",
+      "points": 5
+    },
+    {
+      "word": "wire",
+      "points": 5
+    },
+    {
+      "word": "speaker",
+      "points": 6
+    },
+    {
+      "word": "headphones",
+      "points": 7
+    },
+    {
+      "word": "charger",
+      "points": 6
+    },
+    {
+      "word": "router",
+      "points": 5
+    },
+    {
+      "word": "app",
+      "points": 4
+    },
+    {
+      "word": "password",
+      "points": 6
+    },
+    {
+      "word": "screen",
+      "points": 5
+    },
+    {
+      "word": "button (device)",
+      "points": 7
+    },
+    {
+      "word": "volume",
+      "points": 5
+    },
+    {
+      "word": "brightness",
+      "points": 7
+    },
+    {
+      "word": "wifi",
+      "points": 5
+    },
+    {
+      "word": "signal",
+      "points": 5
+    },
+    {
+      "word": "satellite",
+      "points": 6
+    },
+    {
+      "word": "antenna",
+      "points": 6
+    },
+    {
+      "word": "pilot",
+      "points": 5
+    },
+    {
+      "word": "firefighter",
+      "points": 7
+    },
+    {
+      "word": "police officer",
+      "points": 8
+    },
+    {
+      "word": "lawyer",
+      "points": 5
+    },
+    {
+      "word": "judge",
+      "points": 5
+    },
+    {
+      "word": "mechanic",
+      "points": 6
+    },
+    {
+      "word": "electrician",
+      "points": 7
+    },
+    {
+      "word": "plumber",
+      "points": 6
+    },
+    {
+      "word": "farmer",
+      "points": 5
+    },
+    {
+      "word": "fisherman",
+      "points": 6
+    },
+    {
+      "word": "waiter",
+      "points": 5
+    },
+    {
+      "word": "waitress",
+      "points": 6
+    },
+    {
+      "word": "cashier",
+      "points": 6
+    },
+    {
+      "word": "librarian",
+      "points": 6
+    },
+    {
+      "word": "janitor",
+      "points": 6
+    },
+    {
+      "word": "guard",
+      "points": 5
+    },
+    {
+      "word": "soldier",
+      "points": 6
+    },
+    {
+      "word": "sailor",
+      "points": 5
+    },
+    {
+      "word": "astronaut (job)",
+      "points": 7
+    },
+    {
+      "word": "scientist",
+      "points": 6
+    },
+    {
+      "word": "engineer (job)",
+      "points": 7
+    },
+    {
+      "word": "artist",
+      "points": 5
+    },
+    {
+      "word": "photographer",
+      "points": 7
+    },
+    {
+      "word": "reporter",
+      "points": 6
+    },
+    {
+      "word": "referee",
+      "points": 6
+    },
+    {
+      "word": "coach",
+      "points": 5
+    },
+    {
+      "word": "principal",
+      "points": 6
+    },
+    {
+      "word": "student",
+      "points": 6
+    },
+    {
+      "word": "classmate",
+      "points": 6
+    },
+    {
+      "word": "whistle",
+      "points": 6
+    },
+    {
+      "word": "trophy",
+      "points": 5
+    },
+    {
+      "word": "medal",
+      "points": 5
+    },
+    {
+      "word": "scoreboard",
+      "points": 7
+    },
+    {
+      "word": "stadium",
+      "points": 6
+    },
+    {
+      "word": "gym",
+      "points": 4
+    },
+    {
+      "word": "locker",
+      "points": 5
+    },
+    {
+      "word": "jersey",
+      "points": 5
+    },
+    {
+      "word": "helmet (sport)",
+      "points": 7
+    },
+    {
+      "word": "racket",
+      "points": 5
+    },
+    {
+      "word": "hockey stick",
+      "points": 7
+    },
+    {
+      "word": "puck",
+      "points": 5
+    },
+    {
+      "word": "skateboard ramp",
+      "points": 8
+    },
+    {
+      "word": "surfboard",
+      "points": 6
+    },
+    {
+      "word": "snowboard",
+      "points": 6
+    },
+    {
+      "word": "skis",
+      "points": 5
+    },
+    {
+      "word": "sled",
+      "points": 5
+    },
+    {
+      "word": "ice skates",
+      "points": 6
+    },
+    {
+      "word": "bowling ball",
+      "points": 7
+    },
+    {
+      "word": "dartboard",
+      "points": 6
+    },
+    {
+      "word": "pool table",
+      "points": 6
+    },
+    {
+      "word": "ping pong",
+      "points": 6
     }
   ],
   "medium": [
@@ -2083,16 +3663,8 @@
       "points": 16
     },
     {
-      "word": "beach",
-      "points": 16
-    },
-    {
       "word": "bookstore",
       "points": 17
-    },
-    {
-      "word": "coffee",
-      "points": 16
     },
     {
       "word": "bank account",
@@ -2104,22 +3676,6 @@
     },
     {
       "word": "dentist",
-      "points": 16
-    },
-    {
-      "word": "doctor",
-      "points": 16
-    },
-    {
-      "word": "elevator",
-      "points": 16
-    },
-    {
-      "word": "fire",
-      "points": 15
-    },
-    {
-      "word": "food",
       "points": 16
     },
     {
@@ -2135,32 +3691,12 @@
       "points": 27
     },
     {
-      "word": "ice cream",
-      "points": 26
-    },
-    {
       "word": "job",
       "points": 16
     },
     {
       "word": "laundry",
       "points": 16
-    },
-    {
-      "word": "library",
-      "points": 16
-    },
-    {
-      "word": "movie",
-      "points": 17
-    },
-    {
-      "word": "music",
-      "points": 16
-    },
-    {
-      "word": "night",
-      "points": 15
     },
     {
       "word": "parking",
@@ -2175,28 +3711,12 @@
       "points": 26
     },
     {
-      "word": "pet",
-      "points": 16
-    },
-    {
-      "word": "phone",
-      "points": 16
-    },
-    {
       "word": "post",
       "points": 15
     },
     {
-      "word": "restaurant",
-      "points": 17
-    },
-    {
       "word": "road",
       "points": 15
-    },
-    {
-      "word": "school",
-      "points": 17
     },
     {
       "word": "supermarket",
@@ -2223,16 +3743,8 @@
       "points": 16
     },
     {
-      "word": "train",
-      "points": 15
-    },
-    {
       "word": "university",
       "points": 17
-    },
-    {
-      "word": "vacation",
-      "points": 16
     },
     {
       "word": "video",
@@ -2241,10 +3753,6 @@
     {
       "word": "volunteer",
       "points": 16
-    },
-    {
-      "word": "walking",
-      "points": 15
     },
     {
       "word": "wedding",
@@ -2531,10 +4039,6 @@
       "points": 16
     },
     {
-      "word": "Volcano",
-      "points": 16
-    },
-    {
       "word": "Smartphone",
       "points": 16
     },
@@ -2577,10 +4081,6 @@
     {
       "word": "Ice cream truck",
       "points": 25
-    },
-    {
-      "word": "Shark",
-      "points": 15
     },
     {
       "word": "Opera",
@@ -2627,10 +4127,6 @@
       "points": 25
     },
     {
-      "word": "Basketball",
-      "points": 16
-    },
-    {
       "word": "Lion",
       "points": 16
     },
@@ -2651,10 +4147,6 @@
       "points": 26
     },
     {
-      "word": "Soccer",
-      "points": 16
-    },
-    {
       "word": "Time machine",
       "points": 25
     },
@@ -2663,15 +4155,7 @@
       "points": 16
     },
     {
-      "word": "Rocket",
-      "points": 16
-    },
-    {
       "word": "Netflix",
-      "points": 16
-    },
-    {
-      "word": "Piano",
       "points": 16
     },
     {
@@ -2699,10 +4183,6 @@
       "points": 25
     },
     {
-      "word": "Pencil",
-      "points": 15
-    },
-    {
       "word": "Adventure",
       "points": 16
     },
@@ -2719,10 +4199,6 @@
       "points": 25
     },
     {
-      "word": "Swimming",
-      "points": 16
-    },
-    {
       "word": "Internet browser",
       "points": 25
     },
@@ -2735,15 +4211,7 @@
       "points": 25
     },
     {
-      "word": "Tennis",
-      "points": 16
-    },
-    {
       "word": "Volleyball",
-      "points": 16
-    },
-    {
-      "word": "Chocolate",
       "points": 16
     },
     {
@@ -2815,10 +4283,6 @@
       "points": 16
     },
     {
-      "word": "Chef",
-      "points": 16
-    },
-    {
       "word": "Guitarist",
       "points": 16
     },
@@ -2844,10 +4308,6 @@
     },
     {
       "word": "Circus",
-      "points": 16
-    },
-    {
-      "word": "Hotel",
       "points": 16
     },
     {
@@ -2969,6 +4429,1132 @@
     {
       "word": "Fantasy series",
       "points": 26
+    },
+    {
+      "word": "antibiotic",
+      "points": 16
+    },
+    {
+      "word": "vaccine",
+      "points": 16
+    },
+    {
+      "word": "diagnosis",
+      "points": 16
+    },
+    {
+      "word": "symptom",
+      "points": 16
+    },
+    {
+      "word": "treatment",
+      "points": 16
+    },
+    {
+      "word": "surgery",
+      "points": 16
+    },
+    {
+      "word": "anesthesia",
+      "points": 16
+    },
+    {
+      "word": "therapy",
+      "points": 16
+    },
+    {
+      "word": "rehabilitation",
+      "points": 17
+    },
+    {
+      "word": "prescription",
+      "points": 17
+    },
+    {
+      "word": "infection",
+      "points": 16
+    },
+    {
+      "word": "inflammation",
+      "points": 17
+    },
+    {
+      "word": "allergy",
+      "points": 16
+    },
+    {
+      "word": "immune system",
+      "points": 26
+    },
+    {
+      "word": "metabolism",
+      "points": 16
+    },
+    {
+      "word": "hormone",
+      "points": 16
+    },
+    {
+      "word": "chromosome",
+      "points": 16
+    },
+    {
+      "word": "DNA",
+      "points": 15
+    },
+    {
+      "word": "mutation",
+      "points": 16
+    },
+    {
+      "word": "organism",
+      "points": 16
+    },
+    {
+      "word": "bacteria",
+      "points": 16
+    },
+    {
+      "word": "virus",
+      "points": 15
+    },
+    {
+      "word": "fungus",
+      "points": 16
+    },
+    {
+      "word": "habitat",
+      "points": 16
+    },
+    {
+      "word": "biodiversity",
+      "points": 17
+    },
+    {
+      "word": "extinction",
+      "points": 16
+    },
+    {
+      "word": "conservation",
+      "points": 17
+    },
+    {
+      "word": "pollution",
+      "points": 16
+    },
+    {
+      "word": "renewable energy",
+      "points": 26
+    },
+    {
+      "word": "solar power",
+      "points": 26
+    },
+    {
+      "word": "wind turbine",
+      "points": 26
+    },
+    {
+      "word": "carbon footprint",
+      "points": 26
+    },
+    {
+      "word": "climate change",
+      "points": 26
+    },
+    {
+      "word": "greenhouse effect",
+      "points": 26
+    },
+    {
+      "word": "deforestation",
+      "points": 17
+    },
+    {
+      "word": "recycling program",
+      "points": 26
+    },
+    {
+      "word": "supply chain",
+      "points": 26
+    },
+    {
+      "word": "inflation",
+      "points": 16
+    },
+    {
+      "word": "recession",
+      "points": 16
+    },
+    {
+      "word": "stock market",
+      "points": 26
+    },
+    {
+      "word": "interest rate",
+      "points": 26
+    },
+    {
+      "word": "currency",
+      "points": 16
+    },
+    {
+      "word": "investment",
+      "points": 16
+    },
+    {
+      "word": "budget",
+      "points": 16
+    },
+    {
+      "word": "tax return",
+      "points": 26
+    },
+    {
+      "word": "insurance policy",
+      "points": 26
+    },
+    {
+      "word": "mortgage",
+      "points": 16
+    },
+    {
+      "word": "startup",
+      "points": 16
+    },
+    {
+      "word": "shareholder",
+      "points": 16
+    },
+    {
+      "word": "merger",
+      "points": 16
+    },
+    {
+      "word": "monopoly",
+      "points": 16
+    },
+    {
+      "word": "negotiation",
+      "points": 16
+    },
+    {
+      "word": "contract",
+      "points": 16
+    },
+    {
+      "word": "lawsuit",
+      "points": 16
+    },
+    {
+      "word": "verdict",
+      "points": 16
+    },
+    {
+      "word": "testimony",
+      "points": 16
+    },
+    {
+      "word": "evidence",
+      "points": 16
+    },
+    {
+      "word": "witness",
+      "points": 16
+    },
+    {
+      "word": "constitution",
+      "points": 17
+    },
+    {
+      "word": "amendment",
+      "points": 16
+    },
+    {
+      "word": "referendum",
+      "points": 16
+    },
+    {
+      "word": "election",
+      "points": 16
+    },
+    {
+      "word": "campaign",
+      "points": 16
+    },
+    {
+      "word": "propaganda",
+      "points": 16
+    },
+    {
+      "word": "censorship",
+      "points": 16
+    },
+    {
+      "word": "diplomat",
+      "points": 16
+    },
+    {
+      "word": "treaty",
+      "points": 16
+    },
+    {
+      "word": "sanctions",
+      "points": 16
+    },
+    {
+      "word": "embassy",
+      "points": 16
+    },
+    {
+      "word": "immigration",
+      "points": 16
+    },
+    {
+      "word": "refugee",
+      "points": 16
+    },
+    {
+      "word": "colonization",
+      "points": 17
+    },
+    {
+      "word": "independence",
+      "points": 17
+    },
+    {
+      "word": "monarchy",
+      "points": 16
+    },
+    {
+      "word": "dictatorship",
+      "points": 17
+    },
+    {
+      "word": "anarchy",
+      "points": 16
+    },
+    {
+      "word": "feudalism",
+      "points": 16
+    },
+    {
+      "word": "imperialism",
+      "points": 16
+    },
+    {
+      "word": "nationalism",
+      "points": 16
+    },
+    {
+      "word": "globalization",
+      "points": 17
+    },
+    {
+      "word": "multiculturalism",
+      "points": 17
+    },
+    {
+      "word": "stereotype",
+      "points": 16
+    },
+    {
+      "word": "discrimination",
+      "points": 17
+    },
+    {
+      "word": "equality",
+      "points": 16
+    },
+    {
+      "word": "justice system",
+      "points": 26
+    },
+    {
+      "word": "human rights",
+      "points": 26
+    },
+    {
+      "word": "civil rights movement",
+      "points": 27
+    },
+    {
+      "word": "gravity",
+      "points": 16
+    },
+    {
+      "word": "friction",
+      "points": 16
+    },
+    {
+      "word": "momentum",
+      "points": 16
+    },
+    {
+      "word": "velocity",
+      "points": 16
+    },
+    {
+      "word": "acceleration",
+      "points": 17
+    },
+    {
+      "word": "inertia",
+      "points": 16
+    },
+    {
+      "word": "magnetism",
+      "points": 16
+    },
+    {
+      "word": "radiation",
+      "points": 16
+    },
+    {
+      "word": "nuclear fusion",
+      "points": 26
+    },
+    {
+      "word": "nuclear fission",
+      "points": 26
+    },
+    {
+      "word": "isotope",
+      "points": 16
+    },
+    {
+      "word": "periodic table",
+      "points": 26
+    },
+    {
+      "word": "molecule",
+      "points": 16
+    },
+    {
+      "word": "compound",
+      "points": 16
+    },
+    {
+      "word": "catalyst",
+      "points": 16
+    },
+    {
+      "word": "oxidation",
+      "points": 16
+    },
+    {
+      "word": "photosynthesis process",
+      "points": 26
+    },
+    {
+      "word": "cellular respiration",
+      "points": 26
+    },
+    {
+      "word": "evolution theory",
+      "points": 26
+    },
+    {
+      "word": "natural selection",
+      "points": 26
+    },
+    {
+      "word": "fossil record",
+      "points": 26
+    },
+    {
+      "word": "tectonic plates",
+      "points": 26
+    },
+    {
+      "word": "erosion",
+      "points": 16
+    },
+    {
+      "word": "sedimentary rock",
+      "points": 26
+    },
+    {
+      "word": "glacier",
+      "points": 16
+    },
+    {
+      "word": "aurora borealis",
+      "points": 26
+    },
+    {
+      "word": "solar eclipse",
+      "points": 26
+    },
+    {
+      "word": "lunar eclipse",
+      "points": 26
+    },
+    {
+      "word": "constellation",
+      "points": 17
+    },
+    {
+      "word": "asteroid",
+      "points": 16
+    },
+    {
+      "word": "comet",
+      "points": 15
+    },
+    {
+      "word": "supernova",
+      "points": 16
+    },
+    {
+      "word": "black hole",
+      "points": 26
+    },
+    {
+      "word": "exoplanet",
+      "points": 16
+    },
+    {
+      "word": "satellite (space)",
+      "points": 26
+    },
+    {
+      "word": "space station",
+      "points": 26
+    },
+    {
+      "word": "artificial gravity",
+      "points": 26
+    },
+    {
+      "word": "virtual reality",
+      "points": 26
+    },
+    {
+      "word": "augmented reality",
+      "points": 26
+    },
+    {
+      "word": "robotics",
+      "points": 16
+    },
+    {
+      "word": "automation",
+      "points": 16
+    },
+    {
+      "word": "machine learning",
+      "points": 26
+    },
+    {
+      "word": "neural network",
+      "points": 26
+    },
+    {
+      "word": "quantum computing",
+      "points": 26
+    },
+    {
+      "word": "social network",
+      "points": 26
+    },
+    {
+      "word": "streaming service",
+      "points": 26
+    },
+    {
+      "word": "search engine",
+      "points": 26
+    },
+    {
+      "word": "user interface",
+      "points": 26
+    },
+    {
+      "word": "operating system",
+      "points": 26
+    },
+    {
+      "word": "software update",
+      "points": 26
+    },
+    {
+      "word": "cloud storage",
+      "points": 26
+    },
+    {
+      "word": "data privacy",
+      "points": 26
+    },
+    {
+      "word": "identity theft",
+      "points": 26
+    },
+    {
+      "word": "spam",
+      "points": 15
+    },
+    {
+      "word": "chatbot",
+      "points": 16
+    },
+    {
+      "word": "algorithm bias",
+      "points": 26
+    },
+    {
+      "word": "e-commerce",
+      "points": 16
+    },
+    {
+      "word": "subscription model",
+      "points": 26
+    },
+    {
+      "word": "crowdfunding",
+      "points": 17
+    },
+    {
+      "word": "freelancer",
+      "points": 16
+    },
+    {
+      "word": "remote work",
+      "points": 26
+    },
+    {
+      "word": "work-life balance",
+      "points": 26
+    },
+    {
+      "word": "burnout",
+      "points": 16
+    },
+    {
+      "word": "productivity",
+      "points": 17
+    },
+    {
+      "word": "procrastination",
+      "points": 17
+    },
+    {
+      "word": "mindfulness",
+      "points": 16
+    },
+    {
+      "word": "meditation retreat",
+      "points": 26
+    },
+    {
+      "word": "self-esteem",
+      "points": 16
+    },
+    {
+      "word": "peer pressure",
+      "points": 26
+    },
+    {
+      "word": "body language",
+      "points": 26
+    },
+    {
+      "word": "first impression",
+      "points": 26
+    },
+    {
+      "word": "small talk",
+      "points": 26
+    },
+    {
+      "word": "conflict resolution",
+      "points": 26
+    },
+    {
+      "word": "compromise",
+      "points": 16
+    },
+    {
+      "word": "leadership style",
+      "points": 26
+    },
+    {
+      "word": "team building",
+      "points": 26
+    },
+    {
+      "word": "brainstorming session",
+      "points": 26
+    },
+    {
+      "word": "public speaking",
+      "points": 26
+    },
+    {
+      "word": "stage fright",
+      "points": 26
+    },
+    {
+      "word": "improvisation",
+      "points": 17
+    },
+    {
+      "word": "stand-up comedy",
+      "points": 26
+    },
+    {
+      "word": "documentary film",
+      "points": 26
+    },
+    {
+      "word": "plot twist",
+      "points": 26
+    },
+    {
+      "word": "cliffhanger",
+      "points": 16
+    },
+    {
+      "word": "protagonist",
+      "points": 16
+    },
+    {
+      "word": "antagonist",
+      "points": 16
+    },
+    {
+      "word": "foreshadowing",
+      "points": 17
+    },
+    {
+      "word": "satire",
+      "points": 16
+    },
+    {
+      "word": "irony",
+      "points": 15
+    },
+    {
+      "word": "symbolism",
+      "points": 16
+    },
+    {
+      "word": "allegory",
+      "points": 16
+    },
+    {
+      "word": "genre",
+      "points": 15
+    },
+    {
+      "word": "soundtrack",
+      "points": 16
+    },
+    {
+      "word": "special effects",
+      "points": 26
+    },
+    {
+      "word": "animation studio",
+      "points": 26
+    },
+    {
+      "word": "box office",
+      "points": 26
+    },
+    {
+      "word": "film premiere",
+      "points": 26
+    },
+    {
+      "word": "red carpet",
+      "points": 26
+    },
+    {
+      "word": "award ceremony",
+      "points": 26
+    },
+    {
+      "word": "critics review",
+      "points": 26
+    },
+    {
+      "word": "plagiarism",
+      "points": 16
+    },
+    {
+      "word": "copyright",
+      "points": 16
+    },
+    {
+      "word": "trademark",
+      "points": 16
+    },
+    {
+      "word": "patent",
+      "points": 16
+    },
+    {
+      "word": "royalty payment",
+      "points": 26
+    },
+    {
+      "word": "grand canyon",
+      "points": 26
+    },
+    {
+      "word": "great wall of china",
+      "points": 27
+    },
+    {
+      "word": "eiffel tower",
+      "points": 26
+    },
+    {
+      "word": "taj mahal",
+      "points": 26
+    },
+    {
+      "word": "niagara falls",
+      "points": 26
+    },
+    {
+      "word": "sahara desert",
+      "points": 26
+    },
+    {
+      "word": "amazon rainforest",
+      "points": 26
+    },
+    {
+      "word": "great barrier reef",
+      "points": 27
+    },
+    {
+      "word": "ancient egypt",
+      "points": 26
+    },
+    {
+      "word": "roman empire",
+      "points": 26
+    },
+    {
+      "word": "medieval castle",
+      "points": 26
+    },
+    {
+      "word": "viking ship",
+      "points": 26
+    },
+    {
+      "word": "silk road",
+      "points": 26
+    },
+    {
+      "word": "gold rush",
+      "points": 26
+    },
+    {
+      "word": "industrial revolution",
+      "points": 26
+    },
+    {
+      "word": "cold war",
+      "points": 26
+    },
+    {
+      "word": "world war",
+      "points": 26
+    },
+    {
+      "word": "declaration of independence",
+      "points": 27
+    },
+    {
+      "word": "space race",
+      "points": 26
+    },
+    {
+      "word": "olympic games",
+      "points": 26
+    },
+    {
+      "word": "world cup",
+      "points": 26
+    },
+    {
+      "word": "marathon race",
+      "points": 26
+    },
+    {
+      "word": "triathlon",
+      "points": 16
+    },
+    {
+      "word": "gymnastics routine",
+      "points": 26
+    },
+    {
+      "word": "figure skating",
+      "points": 26
+    },
+    {
+      "word": "martial arts",
+      "points": 26
+    },
+    {
+      "word": "archery",
+      "points": 16
+    },
+    {
+      "word": "fencing",
+      "points": 16
+    },
+    {
+      "word": "rock climbing",
+      "points": 26
+    },
+    {
+      "word": "scuba diving",
+      "points": 26
+    },
+    {
+      "word": "sailing regatta",
+      "points": 26
+    },
+    {
+      "word": "horseback riding",
+      "points": 26
+    },
+    {
+      "word": "motorcycle racing",
+      "points": 26
+    },
+    {
+      "word": "formula one",
+      "points": 26
+    },
+    {
+      "word": "chess tournament",
+      "points": 26
+    },
+    {
+      "word": "poker game",
+      "points": 26
+    },
+    {
+      "word": "crossword puzzle",
+      "points": 26
+    },
+    {
+      "word": "sudoku",
+      "points": 16
+    },
+    {
+      "word": "trivia night",
+      "points": 26
+    },
+    {
+      "word": "escape room",
+      "points": 26
+    },
+    {
+      "word": "scavenger hunt",
+      "points": 26
+    },
+    {
+      "word": "talent show",
+      "points": 26
+    },
+    {
+      "word": "graduation ceremony",
+      "points": 26
+    },
+    {
+      "word": "job interview",
+      "points": 26
+    },
+    {
+      "word": "first date",
+      "points": 26
+    },
+    {
+      "word": "road trip vacation",
+      "points": 27
+    },
+    {
+      "word": "family tree",
+      "points": 26
+    },
+    {
+      "word": "time zone",
+      "points": 26
+    },
+    {
+      "word": "leap year",
+      "points": 26
+    },
+    {
+      "word": "daylight saving time",
+      "points": 27
+    }
+  ],
+  "extreme": [
+    {
+      "word": "antidisestablishmentarianism",
+      "points": 40
+    },
+    {
+      "word": "sesquipedalian",
+      "points": 40
+    },
+    {
+      "word": "onomatopoeia",
+      "points": 40
+    },
+    {
+      "word": "schadenfreude",
+      "points": 40
+    },
+    {
+      "word": "synecdoche",
+      "points": 40
+    },
+    {
+      "word": "juxtaposition",
+      "points": 38
+    },
+    {
+      "word": "quintessential",
+      "points": 38
+    },
+    {
+      "word": "idiosyncrasy",
+      "points": 38
+    },
+    {
+      "word": "cacophony",
+      "points": 38
+    },
+    {
+      "word": "machiavellian",
+      "points": 38
+    },
+    {
+      "word": "serendipity",
+      "points": 36
+    },
+    {
+      "word": "ubiquitous",
+      "points": 36
+    },
+    {
+      "word": "ephemeral",
+      "points": 36
+    },
+    {
+      "word": "quixotic",
+      "points": 36
+    },
+    {
+      "word": "kafkaesque",
+      "points": 36
+    },
+    {
+      "word": "paradoxical",
+      "points": 34
+    },
+    {
+      "word": "malapropism",
+      "points": 34
+    },
+    {
+      "word": "sisyphean",
+      "points": 34
+    },
+    {
+      "word": "orwellian",
+      "points": 34
+    },
+    {
+      "word": "freudian slip",
+      "points": 34
+    },
+    {
+      "word": "conundrum",
+      "points": 32
+    },
+    {
+      "word": "enigma",
+      "points": 32
+    },
+    {
+      "word": "palindrome",
+      "points": 32
+    },
+    {
+      "word": "oxymoron",
+      "points": 32
+    },
+    {
+      "word": "deja vu",
+      "points": 32
+    },
+    {
+      "word": "occam's razor",
+      "points": 30
+    },
+    {
+      "word": "pandora's box",
+      "points": 30
+    },
+    {
+      "word": "catch-22",
+      "points": 30
+    },
+    {
+      "word": "achilles' heel",
+      "points": 30
+    },
+    {
+      "word": "trojan horse",
+      "points": 30
+    },
+    {
+      "word": "placebo effect",
+      "points": 28
+    },
+    {
+      "word": "confirmation bias",
+      "points": 28
+    },
+    {
+      "word": "impostor syndrome",
+      "points": 28
+    },
+    {
+      "word": "dunning-kruger effect",
+      "points": 28
+    },
+    {
+      "word": "stockholm syndrome",
+      "points": 28
+    },
+    {
+      "word": "butterfly effect",
+      "points": 28
+    },
+    {
+      "word": "domino effect",
+      "points": 28
+    },
+    {
+      "word": "self-fulfilling prophecy",
+      "points": 28
+    },
+    {
+      "word": "chicken and egg problem",
+      "points": 28
     }
   ]
 }

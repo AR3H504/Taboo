@@ -192,7 +192,6 @@
             </div>
           </div>
           <div id="roleControls" class="role-controls" style="display: none;">
-            <button id="switchRole" class="switch-btn">Switch Role</button>
             <button id="readyBtnRole">Ready</button>
             <div id="currentRoleDisplay" class="current-role"></div>
           </div>
@@ -277,7 +276,7 @@
     const settingsBtn = document.getElementById("settingsBtn");
     const settingsPanel = document.getElementById("settingsPanel");
     const saveSettingsBtn = document.getElementById("saveSettings");
-    
+
     // Game settings with defaults
     const gameSettings = {
       roundDuration: 60,
@@ -285,14 +284,42 @@
       startingWords: 3,
       wordRevealInterval: 15
     };
-    
+
+    // Only the player who created the room (the host) may change settings,
+    // and only before the game has begun - both enforced authoritatively by
+    // the server, mirrored here just to grey out the control instead of
+    // letting someone click it and get an error back.
+    let currentHostId = null;
+    let gameHasStarted = false;
+
+    function updateSettingsLockUI() {
+      const isHost = !!mySocketId && mySocketId === currentHostId;
+      const locked = !isHost || gameHasStarted;
+      settingsBtn.disabled = locked;
+      settingsBtn.classList.toggle('locked', locked);
+      settingsBtn.title = gameHasStarted
+        ? 'Settings are locked once the game has started'
+        : (isHost ? 'Game settings' : 'Only the room host can change settings');
+      if (locked && settingsPanel.style.display === 'block') {
+        settingsPanel.style.display = 'none';
+        settingsBtn.textContent = '⚙️';
+      }
+    }
+    // Start disabled by default (no `let mySocketId` yet, so don't call
+    // updateSettingsLockUI() here - it's re-evaluated once we're actually
+    // connected and know whether we're a room's host).
+    settingsBtn.disabled = true;
+    settingsBtn.classList.add('locked');
+    settingsBtn.title = 'Only the room host can change settings';
+
     // Settings panel toggle
     settingsBtn.onclick = () => {
+      if (settingsBtn.disabled) return;
       const isVisible = settingsPanel.style.display === "block";
       settingsPanel.style.display = isVisible ? "none" : "block";
       settingsBtn.textContent = isVisible ? "⚙️" : "✕";
     };
-    
+
     // Save settings
     saveSettingsBtn.onclick = () => {
       const newSettings = {
@@ -415,12 +442,6 @@
       }
     }
 
-    // Switch role button
-    document.getElementById("switchRole").onclick = () => {
-      const room = document.getElementById("roomCodeInput").value;
-      socket.emit("switchRole", room);
-    };
-
     function updateRoleDisplay() {
       const roleControls = document.getElementById("roleControls");
       const currentRoleDisplay = document.getElementById("currentRoleDisplay");
@@ -501,6 +522,10 @@
 
     // Socket listeners
     socket.on("roomCreated", roomCode => {
+        // The socket that created the room is its host until it disconnects.
+        currentHostId = mySocketId;
+        updateSettingsLockUI();
+
         // hide the create button
         createBtn.style.display = 'none';
 
@@ -539,10 +564,11 @@
         const li = document.createElement("li");
         const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
         const pts = (w && typeof w === 'object' && w.points) ? w.points : null;
+        const isExtreme = w && typeof w === 'object' && w.difficulty === 'extreme';
         // store canonical lowercase for matching later
         li.dataset.word = String(text).toLowerCase();
-        li.className = 'word-item';
-        li.innerHTML = `<div class="word-text">${text}</div>${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+        li.className = 'word-item' + (isExtreme ? ' extreme' : '');
+        li.innerHTML = `<div class="word-text">${isExtreme ? '⚡ ' : ''}${text}</div>${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
         wordsList.appendChild(li);
       });
       
@@ -567,10 +593,12 @@
         const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
         const status = (w && typeof w === 'object') ? w.status : null;
         const classes = ['team-guess'];
+        if (w && typeof w === 'object' && w.difficulty === 'extreme') classes.push('extreme');
         let pointsText = '';
 
         if (status === 'done') {
           classes.push('correct');
+          if (classes.includes('extreme')) classes.push('extreme-guessed');
           const pts = w.points || w.originalPoints;
           if (pts) pointsText = `<span class="word-points">(+${pts})</span>`;
         } else if (status === 'partial') {
@@ -582,7 +610,8 @@
           if (pts) pointsText = `<span class="word-points">(+${pts})</span>`;
         }
 
-        return `<div class="${classes.join(' ')}">${text}${pointsText}</div>`;
+        const prefix = classes.includes('extreme') ? '⚡ ' : '';
+        return `<div class="${classes.join(' ')}">${prefix}${text}${pointsText}</div>`;
       }).join('') + '</div>';
     }
 
@@ -640,7 +669,13 @@
 
     function addTeamGuess(guess, player, isCorrect, points, isPartial, isCompletingPartial) {
       console.log('Adding team guess:', { guess, player, isCorrect, points, isPartial, isCompletingPartial });
-      
+
+      // Only true on a full completion (never on a partial match - see the
+      // server comment on the correctGuess payload) - so a fuzzy-matched
+      // extreme word never gets flagged here and can't be confused with an
+      // actual finished one.
+      const isExtremeWord = guess && typeof guess === 'object' && guess.difficulty === 'extreme';
+
       // Normalize the guess to a string first
       let displayGuess = '';
       if (typeof guess === 'string') {
@@ -686,18 +721,20 @@
 
         if (existing) {
         // Update existing guess - order matters for CSS specificity
-        existing.classList.remove('live-guess', 'correct', 'wrong', 'partial');
+        existing.classList.remove('live-guess', 'correct', 'wrong', 'partial', 'extreme-guessed');
         existing.className = 'team-guess';
         if (isPartial) {
           existing.classList.add('partial');
         } else if (isCompletingPartial) {
           existing.classList.add('correct');
+          if (isExtremeWord) existing.classList.add('extreme-guessed');
         } else if (isCorrect) {
           existing.classList.add('correct');
+          if (isExtremeWord) existing.classList.add('extreme-guessed');
         } else {
           existing.classList.add('wrong');
         }
-        
+
         let pointsText = '';
         if (points) {
           if (isPartial) {
@@ -709,7 +746,7 @@
           }
         }
 
-        existing.innerHTML = `${player.name}: ${displayWord}${pointsText}`;
+        existing.innerHTML = `${isExtremeWord && !isPartial ? '⚡ ' : ''}${player.name}: ${displayWord}${pointsText}`;
         existing.dataset.permanent = 'true';
         existing.dataset.isPartial = isPartial;
         existing.style.opacity = '';
@@ -724,15 +761,17 @@
       } else {
         // Create new guess element
         const guessElement = document.createElement("div");
-        
+
         // Set appropriate class - order matters for CSS specificity
         guessElement.className = 'team-guess';
         if (isPartial) {
           guessElement.classList.add('partial');
         } else if (isCompletingPartial) {
           guessElement.classList.add('correct');
+          if (isExtremeWord) guessElement.classList.add('extreme-guessed');
         } else if (isCorrect) {
           guessElement.classList.add('correct');
+          if (isExtremeWord) guessElement.classList.add('extreme-guessed');
         } else {
           guessElement.classList.add('wrong');
         }
@@ -748,7 +787,7 @@
           }
         }
 
-        guessElement.innerHTML = `${player.name}: ${displayWord}${pointsText}`;
+        guessElement.innerHTML = `${isExtremeWord && !isPartial ? '⚡ ' : ''}${player.name}: ${displayWord}${pointsText}`;
         guessElement.dataset.guessKey = key;
         guessElement.dataset.permanent = 'true';
         guessElement.dataset.isPartial = isPartial;
@@ -948,13 +987,13 @@
       const amIDescriber = (gameState.players || []).find(p => p.id === mySocketId && p.role === 'describer' && p.team === currentTurn);
       if (amIDescriber && roundActive) {
         // disable join/switch controls so the describer can't change mid-round
-        ['redDescriber','redGuesser','blueDescriber','blueGuesser','switchRole'].forEach(id => {
+        ['redDescriber','redGuesser','blueDescriber','blueGuesser'].forEach(id => {
           const el = document.getElementById(id);
           if (el) el.disabled = true;
         });
       } else {
         // otherwise enable the join buttons (but keep describer join disabled if already taken)
-        ['redDescriber','redGuesser','blueDescriber','blueGuesser','switchRole'].forEach(id => {
+        ['redDescriber','redGuesser','blueDescriber','blueGuesser'].forEach(id => {
           const el = document.getElementById(id);
           if (el) el.disabled = false;
         });
@@ -1084,7 +1123,11 @@
     socket.on('updateGameState', gameState => {
       console.log('Received updateGameState event:', gameState);
       updateTeamsDisplay(gameState);
-      
+
+      if (gameState.hostId !== undefined) currentHostId = gameState.hostId;
+      if (gameState.gameStarted !== undefined) gameHasStarted = gameState.gameStarted;
+      updateSettingsLockUI();
+
       // Update turn display
       const turnDisplay = document.getElementById('turnDisplay');
       const turnText = document.querySelector('.turn-text');
@@ -1250,6 +1293,8 @@
         words.forEach(w => {
           const text = (typeof w === 'string') ? w : (w && w.word) ? w.word : String(w);
           const status = (w && typeof w === 'object') ? w.status : null;
+          const isExtreme = w && typeof w === 'object' && w.difficulty === 'extreme';
+          const prefix = isExtreme ? '⚡ ' : '';
           const el = document.createElement('div');
           el.className = 'team-guess';
           el.style.padding = '8px 12px';
@@ -1259,18 +1304,27 @@
 
           if (status === 'done') {
             const pts = w.points || w.originalPoints || null;
-            el.style.background = 'rgba(46, 204, 113, 0.12)';
-            el.style.border = '1px solid rgba(46, 204, 113, 0.4)';
-            el.innerHTML = `${text} ✓${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+            if (isExtreme) {
+              // Same gold-glow treatment as everywhere else a completed
+              // extreme word shows up - deliberately not a brighter green,
+              // so it can't be mistaken for a routine correct guess here either.
+              el.style.background = 'linear-gradient(135deg, rgba(212, 175, 55, 0.4), rgba(255, 215, 0, 0.18))';
+              el.style.border = '2px solid #d4af37';
+              el.style.boxShadow = '0 0 12px rgba(212, 175, 55, 0.5)';
+            } else {
+              el.style.background = 'rgba(46, 204, 113, 0.12)';
+              el.style.border = '1px solid rgba(46, 204, 113, 0.4)';
+            }
+            el.innerHTML = `${prefix}${text} ✓${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
           } else if (status === 'partial') {
             const pts = w.partialPoints || null;
             el.style.background = 'rgba(241, 196, 15, 0.12)';
             el.style.border = '1px solid rgba(241, 196, 15, 0.4)';
-            el.innerHTML = `${text} (partial)${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+            el.innerHTML = `${prefix}${text} (partial)${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
           } else {
             el.style.background = 'rgba(231, 76, 60, 0.06)';
             el.style.border = '1px solid rgba(231, 76, 60, 0.15)';
-            el.innerHTML = text;
+            el.innerHTML = `${prefix}${text}`;
           }
           reviewWords.appendChild(el);
         });
@@ -1347,9 +1401,10 @@
         const li = document.createElement("li");
         const text = (typeof word === 'string') ? word : (word && word.word) ? word.word : String(word);
         const pts = (word && typeof word === 'object' && word.points) ? word.points : null;
+        const isExtreme = word && typeof word === 'object' && word.difficulty === 'extreme';
         li.dataset.word = String(text).toLowerCase();
-        li.className = 'word-item';
-        li.innerHTML = `<div class="word-text">${text}</div>${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
+        li.className = 'word-item' + (isExtreme ? ' extreme' : '');
+        li.innerHTML = `<div class="word-text">${isExtreme ? '⚡ ' : ''}${text}</div>${pts ? `<div class="word-points">(+${pts})</div>` : ''}`;
         wordsList.appendChild(li);
       }
     });
